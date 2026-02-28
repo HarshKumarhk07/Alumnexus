@@ -1,0 +1,568 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import {
+    Users, Briefcase, BookOpen, Bell, TrendingUp,
+    ArrowUpRight, Clock, Star, Target, ShieldCheck,
+    FileText, Mail, Download, CheckCircle2, XCircle, X
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { adminService, notificationService, jobService, blogService } from '../services/api.service';
+import toast from 'react-hot-toast';
+import ImageSlider from '../components/ImageSlider';
+import CommentModal from '../components/CommentModal';
+import { Heart, MessageSquare, Image as ImageIcon } from 'lucide-react';
+
+const Dashboard = () => {
+    const { user } = useAuth();
+    const [stats, setStats] = useState(null);
+    const [notifications, setNotifications] = useState([]);
+    const [recentJobs, setRecentJobs] = useState([]);
+    const [recentBlogs, setRecentBlogs] = useState([]);
+    const [activeBlogForComments, setActiveBlogForComments] = useState(null);
+
+    // Admin Announcement State
+    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+    const [announcement, setAnnouncement] = useState({ message: '', targetRole: 'all', targetUsers: [] });
+    const [isPosting, setIsPosting] = useState(false);
+    const [alumniList, setAlumniList] = useState([]);
+    const [alumniSearch, setAlumniSearch] = useState('');
+
+    // Admin Users Modal State
+    const [showUsersModal, setShowUsersModal] = useState(false);
+    const [modalRole, setModalRole] = useState('student');
+    const [modalUsers, setModalUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
+    const [pendingAlumni, setPendingAlumni] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [user]);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            if (user.role === 'admin') {
+                const [statsRes, pendingRes, notifyRes, jobsRes, blogsRes] = await Promise.all([
+                    adminService.getStats(),
+                    adminService.getPendingAlumni(),
+                    notificationService.getNotifications(),
+                    adminService.getAllJobs(),
+                    blogService.getBlogs()
+                ]);
+                setStats(statsRes.data.data);
+                setPendingAlumni(pendingRes.data.data);
+                setNotifications(notifyRes.data.data);
+                setRecentJobs(jobsRes.data.data.slice(0, 3));
+                setRecentBlogs(blogsRes.data.data.slice(0, 3));
+            } else {
+                const [jobRes, notifyRes, statsRes, blogsRes] = await Promise.all([
+                    jobService.getJobs(),
+                    notificationService.getNotifications(),
+                    adminService.getPublicStats(),
+                    blogService.getBlogs()
+                ]);
+                setRecentJobs(jobRes.data.data.slice(0, 3));
+                setNotifications(notifyRes.data.data);
+                setStats(statsRes.data.data);
+                setRecentBlogs(blogsRes.data.data.slice(0, 3));
+            }
+        } catch (err) {
+            toast.error('Failed to load dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerify = async (id, status) => {
+        try {
+            await adminService.verifyAlumni(id, status);
+            toast.success(`Alumni ${status === 'approved' ? 'approved' : 'rejected'}`);
+            setPendingAlumni(pendingAlumni.filter(a => a._id !== id));
+            fetchDashboardData();
+        } catch (err) {
+            toast.error('Verification failed');
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const response = await adminService.exportUsers();
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'users.csv');
+            document.body.appendChild(link);
+            link.click();
+            toast.success('User list exported');
+        } catch (err) {
+            toast.error('Export failed');
+        }
+    };
+
+    const handlePostAnnouncement = async (e) => {
+        e.preventDefault();
+
+        if (announcement.targetRole === 'specific' && announcement.targetUsers.length === 0) {
+            return toast.error("Please select at least one alumni.");
+        }
+
+        setIsPosting(true);
+        try {
+            const res = await adminService.postAnnouncement(announcement);
+            toast.success(res.data.message || 'Announcement posted successfully!');
+            setShowAnnouncementModal(false);
+            setAnnouncement({ message: '', targetRole: 'all', targetUsers: [] });
+            setAlumniSearch('');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to post announcement');
+            console.error('Post announcement error:', error);
+        } finally {
+            setIsPosting(false);
+        }
+    };
+
+    const fetchModalUsers = async (role) => {
+        setModalRole(role);
+        setShowUsersModal(true);
+        setLoadingUsers(true);
+        try {
+            const res = await adminService.getUsers({ role });
+            setModalUsers(res.data.data);
+        } catch (err) {
+            toast.error(`Failed to fetch ${role}s`);
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
+    const fetchAlumniList = async () => {
+        try {
+            const res = await adminService.getUsers({ role: 'alumni' });
+            setAlumniList(res.data.data);
+        } catch (err) {
+            toast.error('Failed to fetch alumni list');
+        }
+    };
+
+    const handleLike = async (blogId) => {
+        try {
+            const res = await blogService.likeBlog(blogId);
+            setRecentBlogs(recentBlogs.map(b => (b._id === blogId ? res.data.data : b)));
+            if (activeBlogForComments && activeBlogForComments._id === blogId) {
+                setActiveBlogForComments(res.data.data);
+            }
+        } catch (err) {
+            toast.error('Failed to like post');
+        }
+    };
+
+    // Auto-fetch alumni if "specific" is selected
+    useEffect(() => {
+        if (announcement.targetRole === 'specific' && alumniList.length === 0) {
+            fetchAlumniList();
+        }
+    }, [announcement.targetRole]);
+
+    if (loading) return <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div></div>;
+
+    return (
+        <div className="space-y-10 animate-fade-in mb-20">
+            <section className="w-full">
+                <ImageSlider />
+            </section>
+
+            {/* Welcome Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h1 className="text-2xl md:text-4xl font-bold text-[var(--primary)]">Hello, {user?.name}! 👋</h1>
+                    <p className="text-sm md:text-base text-gray-600 mt-1">Here's the AlumNexus overview for today.</p>
+                </div>
+                <div className="flex flex-wrap gap-3 md:gap-4 w-full md:w-auto">
+                    {user.role === 'admin' ? (
+                        <button onClick={handleExport} className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold hover:bg-[var(--accent)] transition-smooth flex items-center justify-center gap-2 text-sm md:text-base">
+                            <Download size={18} /> <span className="hidden sm:inline">Export Data</span><span className="sm:hidden">Export</span>
+                        </button>
+                    ) : (
+                        <Link to="/directory" className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold hover:bg-[var(--accent)] transition-smooth flex items-center justify-center gap-2 text-sm md:text-base">
+                            <Users size={18} /> <span className="hidden sm:inline">My Network</span><span className="sm:hidden">Network</span>
+                        </Link>
+                    )}
+                </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {user.role === 'admin' ? (
+                    <>
+                        <StatCard label="Total Students" value={stats?.totalStudents || 0} icon={Users} onClick={() => fetchModalUsers('student')} />
+                        <StatCard label="Total Alumni" value={stats?.totalAlumni || 0} icon={ShieldCheck} onClick={() => fetchModalUsers('alumni')} />
+                        <StatCard label="Pending Verifications" value={stats?.pendingAlumni || 0} icon={Clock} trend="Urgent" color="text-amber-600" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} />
+                        <StatCard label="Active Jobs" value={stats?.totalJobs || 0} icon={Briefcase} to="/jobs" />
+                    </>
+                ) : (
+                    <>
+                        <StatCard label="Network Size" value={stats?.networkSize || '0'} icon={Users} to="/directory" />
+                        <StatCard label="Active Jobs" value={stats?.activeJobs || 0} icon={Briefcase} to="/jobs" />
+                        <StatCard label="Mentors Available" value={stats?.mentors || 0} icon={Star} to="/directory" />
+                        <StatCard label="Insights Shared" value={stats?.insights || 0} icon={TrendingUp} to="/blogs" />
+                    </>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Content Area */}
+                <div className="lg:col-span-2 space-y-8">
+                    {user.role === 'admin' && pendingAlumni.length > 0 && (
+                        <div className="space-y-4">
+                            <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2">
+                                <Clock size={24} /> Alumni Verification Requests
+                            </h2>
+                            <div className="space-y-3">
+                                {pendingAlumni.map((alumni) => (
+                                    <div key={alumni._id} className="glass-card p-5 border border-[var(--border)] flex justify-between items-center group hover:bg-[var(--surface)] transition-smooth">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-[var(--accent)] rounded-xl premium-shadow overflow-hidden flex items-center justify-center font-bold text-[var(--primary)] shrink-0">
+                                                {alumni.profilePhoto && alumni.profilePhoto !== 'no-photo.jpg' ? (
+                                                    <img src={alumni.profilePhoto} alt={alumni.user.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    alumni.user.name.charAt(0)
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold">{alumni.user.name}</h4>
+                                                <p className="text-sm text-gray-500">{alumni.branch} • Class of {alumni.batchYear}</p>
+                                                <p className="text-xs text-[var(--primary)] font-medium">{alumni.company} - {alumni.designation}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleVerify(alumni._id, 'approved')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-smooth" title="Approve">
+                                                <CheckCircle2 size={24} />
+                                            </button>
+                                            <button onClick={() => handleVerify(alumni._id, 'rejected')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-smooth" title="Reject">
+                                                <XCircle size={24} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center px-2">
+                            <h2 className="text-2xl font-bold text-[var(--primary)]">
+                                {user.role === 'admin' ? 'Recent Global Activity' : 'Recent Opportunities'}
+                            </h2>
+                            <Link to="/jobs" className="text-sm font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
+                                View All <ArrowUpRight size={14} />
+                            </Link>
+                        </div>
+
+                        <div className="space-y-4">
+                            {(user.role === 'admin' ? recentJobs : recentJobs).map((job, i) => (
+                                <Link to="/jobs" key={i} className="glass-card p-5 border border-[var(--border)] flex justify-between items-center group cursor-pointer hover:bg-[var(--primary)] transition-smooth block">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-[var(--accent)] rounded-xl flex items-center justify-center font-bold text-[var(--primary)] group-hover:bg-white transition-smooth">
+                                            {job.company?.charAt(0) || 'J'}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold group-hover:text-white transition-smooth">{job.role}</h4>
+                                            <p className="text-sm text-gray-500 group-hover:text-white/80 transition-smooth">{job.company} • {job.location}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end gap-1">
+                                        <span className="text-xs text-gray-400 group-hover:text-white/70 flex items-center gap-1 transition-smooth"><Clock size={12} /> {new Date(job.createdAt).toLocaleDateString()}</span>
+                                        <span className="text-xs font-bold text-[var(--primary)] group-hover:text-white transition-smooth flex items-center gap-1">View Details <ArrowUpRight size={14} /></span>
+                                    </div>
+                                </Link>
+                            ))}
+                            {(user.role !== 'admin' && recentJobs.length === 0) && (
+                                <div className="p-10 text-center glass-card text-gray-400">No recent opportunities found</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 pt-10">
+                        <div className="flex justify-between items-center px-2">
+                            <h2 className="text-2xl font-bold text-[var(--primary)]">Recent Insights</h2>
+                            <Link to="/blogs" className="text-sm font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
+                                View All <ArrowUpRight size={14} />
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                            {recentBlogs.map((blog) => (
+                                <div key={blog._id} className="glass-card overflow-hidden premium-shadow group border border-[var(--border)] flex flex-col hover:-translate-y-2 transition-smooth">
+                                    <div className="h-40 relative overflow-hidden bg-[var(--accent)] text-[var(--primary)]">
+                                        {blog.coverImage ? (
+                                            <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover group-hover:scale-110 transition-smooth" />
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center opacity-40">
+                                                <ImageIcon size={48} />
+                                                <span className="text-xs font-bold mt-2 uppercase tracking-widest">{blog.category}</span>
+                                            </div>
+                                        )}
+                                        <div className="absolute top-4 left-4">
+                                            <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-[var(--primary)] text-[10px] rounded-full font-bold uppercase tracking-wider shadow-sm">
+                                                {blog.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="p-5 flex-1 flex flex-col text-left mb-2">
+                                        <h3 className="text-lg font-bold group-hover:text-[var(--primary-light)] transition-smooth leading-snug min-h-[48px] line-clamp-2">
+                                            {blog.title}
+                                        </h3>
+                                        <p className="text-gray-500 text-xs mt-3 line-clamp-3 leading-relaxed flex-1">
+                                            {blog.content.substring(0, 100)}...
+                                        </p>
+                                        <div className="flex justify-between items-center mt-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 bg-[var(--surface)] text-[var(--primary)] rounded-full flex items-center justify-center text-[10px] font-bold">
+                                                    {blog.author?.name?.charAt(0) || 'A'}
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-[10px] font-bold text-gray-800 leading-tight truncate max-w-[80px]">{blog.author?.name || 'Anonymous'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleLike(blog._id)} className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-smooth cursor-pointer">
+                                                    <Heart size={14} className="text-red-500 hover:scale-110 transition-transform" fill={blog.likes.includes(user?._id) ? 'currentColor' : 'none'} />
+                                                    <span className="text-[10px] font-bold text-gray-500">{blog.likes.length}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveBlogForComments(blog)}
+                                                    className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-smooth text-[var(--primary)] cursor-pointer"
+                                                >
+                                                    <MessageSquare size={14} />
+                                                    <span className="text-[10px] font-bold">{blog.comments?.length || 0}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {recentBlogs.length === 0 && (
+                                <div className="col-span-full p-10 text-center glass-card text-gray-400">No recent insights found</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sidebar Widgets */}
+                <div className="space-y-8">
+                    <div className="glass-card p-6 border border-[var(--border)] space-y-4">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <Bell size={20} className="text-[var(--primary)]" /> Notifications
+                        </h3>
+                        <div className="space-y-4">
+                            {notifications.slice(0, 5).map((note, i) => (
+                                <div key={i} className="flex gap-4 p-3 hover:bg-[var(--background)] rounded-xl transition-smooth group cursor-pointer">
+                                    <div className={`w-2 h-2 mt-2 rounded-full transition-smooth ${!note.isRead ? 'bg-[var(--primary)] scale-125' : 'bg-gray-300'}`}></div>
+                                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{note.message}</p>
+                                </div>
+                            ))}
+                            {notifications.length === 0 && <p className="text-center text-sm text-gray-400">All clear!</p>}
+                        </div>
+                        <button
+                            onClick={() => notificationService.markAsRead().then(fetchDashboardData)}
+                            className="w-full py-3 bg-[var(--surface)] text-[var(--primary)] font-bold rounded-xl text-sm border border-[var(--border)] hover:bg-[var(--accent)] transition-smooth"
+                        >
+                            Mark all as read
+                        </button>
+                    </div>
+
+                    {user?.role === 'admin' && (
+                        <div className="glass-card p-6 border border-[var(--border)] bg-[var(--primary)] text-white premium-shadow">
+                            <h3 className="text-xl font-bold mb-4">Content Studio</h3>
+                            <div className="grid grid-cols-1 gap-3">
+                                <button onClick={() => setShowAnnouncementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                    <Mail size={18} />
+                                    <span className="text-sm font-bold">Post Announcement</span>
+                                </button>
+                                <button className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left">
+                                    <FileText size={18} />
+                                    <span className="text-sm font-bold">Write Newsletter</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Announcement Modal */}
+            {
+                showAnnouncementModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in">
+                            <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
+                                <h2 className="text-2xl font-bold text-[var(--primary)]">Post Global Announcement</h2>
+                                <button onClick={() => setShowAnnouncementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                            </div>
+                            <form onSubmit={handlePostAnnouncement} className="p-10 space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Message</label>
+                                    <textarea required rows="4" className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none"
+                                        placeholder="Write your announcement here..."
+                                        value={announcement.message}
+                                        onChange={(e) => setAnnouncement({ ...announcement, message: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold">Target Audience</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {['all', 'student', 'alumni', 'specific'].map((role) => (
+                                            <button
+                                                key={role}
+                                                type="button"
+                                                onClick={() => setAnnouncement({ ...announcement, targetRole: role })}
+                                                className={`p-3 rounded-xl border font-bold text-sm transition-smooth capitalize
+                                                ${announcement.targetRole === role
+                                                        ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)]'}`}
+                                            >
+                                                {role === 'specific' ? 'Specific Alumni' : role}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {announcement.targetRole === 'specific' && (
+                                    <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-[var(--border)]">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-sm font-bold">Select Alumni ({announcement.targetUsers.length} selected)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Search by name..."
+                                                value={alumniSearch}
+                                                onChange={(e) => setAlumniSearch(e.target.value)}
+                                                className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                            {alumniList.filter(a => a.name.toLowerCase().includes(alumniSearch.toLowerCase())).map(alumni => (
+                                                <label key={alumni._id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-smooth border border-transparent hover:border-gray-200">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={announcement.targetUsers.includes(alumni._id)}
+                                                        onChange={(e) => {
+                                                            const newUsers = e.target.checked
+                                                                ? [...announcement.targetUsers, alumni._id]
+                                                                : announcement.targetUsers.filter(id => id !== alumni._id);
+                                                            setAnnouncement({ ...announcement, targetUsers: newUsers });
+                                                        }}
+                                                        className="w-4 h-4 text-[var(--primary)] rounded border-gray-300 focus:ring-[var(--primary)]"
+                                                    />
+                                                    <div>
+                                                        <p className="font-bold text-sm">{alumni.name}</p>
+                                                        <p className="text-xs text-gray-500">{alumni.email}</p>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                            {alumniList.length === 0 && <p className="text-sm text-center text-gray-400 py-4">Loading alumni...</p>}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button disabled={isPosting} type="submit" className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPosting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                    {isPosting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Posting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mail size={20} /> Send Announcement
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Users List Modal */}
+            {
+                showUsersModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-[32px] w-full max-w-2xl premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[80vh]">
+                            <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                                <h2 className="text-2xl font-bold text-[var(--primary)] capitalize">Total {modalRole}s</h2>
+                                <button onClick={() => setShowUsersModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar bg-gray-50/50">
+                                {loadingUsers ? (
+                                    <div className="flex justify-center flex-col items-center gap-4 py-16">
+                                        <div className="w-10 h-10 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+                                        <p className="text-gray-500 font-bold animate-pulse">Fetching users...</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {modalUsers.map(u => (
+                                            <div key={u._id} className="p-4 bg-white border border-[var(--border)] rounded-2xl flex items-center gap-4 hover:border-[var(--primary)] hover:shadow-lg transition-smooth group cursor-pointer">
+                                                <div className="w-12 h-12 rounded-xl bg-[var(--accent)] overflow-hidden font-bold text-[var(--primary)] text-xl flex items-center justify-center group-hover:scale-110 transition-smooth shrink-0">
+                                                    {u.profilePhoto && u.profilePhoto !== 'no-photo.jpg' ? (
+                                                        <img src={u.profilePhoto} alt={u.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        u.name.charAt(0)
+                                                    )}
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <p className="font-bold text-[var(--primary)] truncate">{u.name}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {modalUsers.length === 0 && (
+                                            <div className="col-span-full py-16 text-center text-gray-400">
+                                                <Users size={48} className="mx-auto mb-4 opacity-50" />
+                                                <p className="font-bold">No {modalRole}s found.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            <CommentModal
+                blog={activeBlogForComments}
+                isOpen={!!activeBlogForComments}
+                onClose={() => setActiveBlogForComments(null)}
+                onCommentAdded={async (blogId, text) => {
+                    const res = await blogService.addComment(blogId, text);
+                    toast.success('Comment added!');
+                    setActiveBlogForComments(res.data.data);
+                    await fetchDashboardData();
+                }}
+                onCommentDeleted={async (blogId, commentId) => {
+                    const res = await blogService.deleteComment(blogId, commentId);
+                    toast.success('Comment deleted!');
+                    setActiveBlogForComments(res.data.data);
+                    await fetchDashboardData();
+                }}
+            />
+        </div >
+    );
+};
+
+const StatCard = ({ label, value, icon: Icon, trend, color, to, onClick }) => {
+    const Component = to ? Link : (onClick ? 'button' : 'div');
+    return (
+        <Component to={to} onClick={onClick} className={`text-left w-full glass-card p-4 md:p-6 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth ${to || onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}>
+            <div className="flex justify-between items-start mb-4">
+                <div className="p-2 md:p-3 bg-[var(--background)] text-[var(--primary)] rounded-xl group-hover:bg-white transition-smooth">
+                    <Icon size={20} className="md:w-6 md:h-6" />
+                </div>
+                {trend && <span className={`text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full ${color || 'text-green-600 bg-green-50'}`}>{trend}</span>}
+            </div>
+            <h3 className="text-2xl md:text-3xl font-bold text-[var(--primary)]">{value}</h3>
+            <p className="text-gray-500 text-xs md:text-sm font-medium">{label}</p>
+        </Component>
+    );
+};
+
+export default Dashboard;

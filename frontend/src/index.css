@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #5A3E2B;
+  --primary-light: #8B5E3C;
+  --background: #F3E8D9;
+  --surface: #E5D3B3;
+  --text-dark: #2C1B12;
+  --text-light: #FFFFFF;
+  --accent: #D7C2AE;
+  --border: #C8B6A6;
+  --shadow: rgba(0, 0, 0, 0.15);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-dark);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  * {
+    @apply border-[var(--border)];
+  }
+}
+
+.glass-card {
+  background: rgba(229, 211, 179, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+}
+
+.premium-shadow {
+  box-shadow: 0 10px 25px -5px var(--shadow);
+}
+
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.animate-pop {
+  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
