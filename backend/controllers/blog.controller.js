@@ -58,7 +58,9 @@ exports.likeBlog = async (req, res) => {
         const blog = await Blog.findById(req.params.id);
         if (!blog) return res.status(404).json({ success: false, message: 'Blog not found' });
 
-        if (blog.likes.includes(req.user._id)) {
+        const isLiked = blog.likes.some(id => id.toString() === req.user._id.toString());
+
+        if (isLiked) {
             blog.likes = blog.likes.filter(id => id.toString() !== req.user._id.toString());
         } else {
             blog.likes.push(req.user._id);

@@ -124,10 +124,10 @@ const StudentDirectory = () => {
                         <div key={student._id} className="glass-card p-8 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[32px]">
 
                             <div className="w-24 h-24 rounded-[32px] bg-[var(--accent)] border-4 border-white premium-shadow mb-6 overflow-hidden">
-                                {student.profilePhoto ? (
+                                {student.profilePhoto && student.profilePhoto !== 'no-photo.jpg' ? (
                                     <img src={student.profilePhoto} alt={student.user.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[var(--primary)]">
+                                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[var(--primary)] text-uppercase">
                                         {student.user.name.charAt(0)}
                                     </div>
                                 )}
@@ -201,10 +201,10 @@ const StudentDirectory = () => {
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
                             <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
                                 <div className="w-32 h-32 rounded-[40px] bg-[var(--accent)] border-4 border-white premium-shadow overflow-hidden shrink-0">
-                                    {selectedStudent.profilePhoto ? (
+                                    {selectedStudent.profilePhoto && selectedStudent.profilePhoto !== 'no-photo.jpg' ? (
                                         <img src={selectedStudent.profilePhoto} alt={selectedStudent.user.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-[var(--primary)]">
+                                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-[var(--primary)] text-uppercase">
                                             {selectedStudent.user.name.charAt(0)}
                                         </div>
                                     )}

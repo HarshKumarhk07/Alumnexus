@@ -32,7 +32,8 @@ exports.getStudentProfiles = async (req, res) => {
                 linkedin: profile ? profile.linkedin : '',
                 github: profile ? profile.github : '',
                 careerInterest: profile ? profile.careerInterest : '',
-                resumeURL: profile ? profile.resumeURL : ''
+                resumeURL: profile ? profile.resumeURL : '',
+                profilePhoto: profile ? profile.profilePhoto : 'no-photo.jpg'
             };
         });
 
@@ -261,7 +262,7 @@ exports.createRequest = async (req, res) => {
         // Create notification for alumni
         await Notification.create({
             user: receiverId,
-            message: `New ${type} request from ${req.user.name}`,
+            message: `${req.user.name} sent you a new ${type} request`,
             type: 'info'
         });
 
@@ -326,7 +327,7 @@ exports.updateRequestStatus = async (req, res) => {
         // Create notification for student
         await Notification.create({
             user: request.sender,
-            message: `Your ${request.type} request has been ${status}`,
+            message: `${req.user.name} has ${status} your ${request.type} request${response ? ': ' + (response.length > 50 ? response.substring(0, 50) + '...' : response) : ''}`,
             type: status === 'accepted' ? 'success' : 'alert'
         });
 
