@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { profileService } from '../services/api.service';
+import { profileService, adminService } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
 import {
     Search, Filter, GraduationCap, Mail,
     ExternalLink, Linkedin, Globe, Loader2, X, Github,
-    FileText, User, Briefcase
+    FileText, User, Briefcase, ShieldCheck, ShieldOff, Trash2, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -45,6 +45,53 @@ const StudentDirectory = () => {
         }
     };
 
+    const handleDeleteStudent = async (id, name) => {
+        if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) return;
+        try {
+            await adminService.deleteUser(id);
+            toast.success('Student deleted successfully');
+            fetchStudents();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to delete student');
+        }
+    };
+
+    const handleUpdateStatus = async (id, newVerifiedState) => {
+        const action = newVerifiedState ? 'approve' : 'revoke';
+        if (!window.confirm(`Are you sure you want to ${action} this student?`)) return;
+
+        try {
+            await adminService.updateUserStatus(id, { isVerified: newVerifiedState });
+            toast.success(`Student ${newVerifiedState ? 'approved' : 'revoked'} successfully`);
+            // Optimistically update local state so the card reflects the new status immediately
+            setStudents(prev => prev.map(s => {
+                if (String(s.user._id) === String(id)) {
+                    return { ...s, user: { ...s.user, isVerified: newVerifiedState } };
+                }
+                return s;
+            }));
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update status');
+        }
+    };
+
+    const handleExportCSV = async () => {
+        try {
+            const res = await adminService.exportStudents();
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'students.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Student data exported successfully!');
+        } catch (err) {
+            toast.error('Failed to export student data');
+        }
+    };
+
     const filteredStudents = students.filter(s => {
         const matchesSearch = s.user.name.toLowerCase().includes(search.toLowerCase()) ||
             s.careerInterest?.toLowerCase().includes(search.toLowerCase());
@@ -59,11 +106,21 @@ const StudentDirectory = () => {
     return (
         <div className="max-w-7xl mx-auto space-y-12 animate-fade-in mb-20 text-left">
             {/* Header */}
-            <div className="max-w-2xl">
-                <h1 className="text-5xl font-extrabold text-[var(--primary)] tracking-tight">Student Talent</h1>
-                <p className="text-gray-600 mt-4 text-lg">
-                    Discover and mentor the next generation of professionals. Browse through student profiles, projects, and resumes.
-                </p>
+            <div className="flex items-start justify-between">
+                <div className="max-w-2xl">
+                    <h1 className="text-5xl font-extrabold text-[var(--primary)] tracking-tight">Student Talent</h1>
+                    <p className="text-gray-600 mt-4 text-lg">
+                        Discover and mentor the next generation of professionals. Browse through student profiles, projects, and resumes.
+                    </p>
+                </div>
+                {user?.role === 'admin' && (
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 px-5 py-3 bg-[var(--primary)] hover:bg-[var(--primary-light)] text-white rounded-2xl font-bold text-sm transition-all duration-200 shadow-lg shadow-[var(--primary)]/20 shrink-0 mt-2"
+                    >
+                        <Download size={16} /> Export CSV
+                    </button>
+                )}
             </div>
 
             {/* Advanced Filter Bar */}
@@ -121,34 +178,34 @@ const StudentDirectory = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredStudents.map((student) => (
-                        <div key={student._id} className="glass-card p-8 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[32px]">
+                        <div key={student._id} className="glass-card p-5 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[32px]">
 
-                            <div className="w-24 h-24 rounded-[32px] bg-[var(--accent)] border-4 border-white premium-shadow mb-6 overflow-hidden">
+                            <div className="w-16 h-16 rounded-[24px] bg-[var(--accent)] border-4 border-white premium-shadow mb-3 overflow-hidden">
                                 {student.profilePhoto && student.profilePhoto !== 'no-photo.jpg' ? (
                                     <img src={student.profilePhoto} alt={student.user.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[var(--primary)] text-uppercase">
+                                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[var(--primary)] text-uppercase">
                                         {student.user.name.charAt(0)}
                                     </div>
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <h3 className="text-2xl font-bold text-[var(--primary)]">{student.user.name}</h3>
+                            <div className="space-y-1">
+                                <h3 className="text-lg font-bold text-[var(--primary)]">{student.user.name}</h3>
                                 <p className="text-[var(--primary-light)] font-bold text-sm uppercase tracking-widest">{student.branch}</p>
                                 <div className="flex items-center justify-center gap-1.5 text-gray-500 font-bold text-xs uppercase">
                                     <GraduationCap size={14} className="text-[var(--primary)]" /> Year {student.year}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 w-full gap-3 mt-8">
+                            <div className="grid grid-cols-1 w-full gap-2 mt-4">
                                 <div className="bg-white/50 p-3 rounded-2xl border border-[var(--border)]">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Interest</p>
                                     <p className="text-xs font-bold truncate">{student.careerInterest || 'Not Specified'}</p>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 w-full mt-6">
+                            <div className="flex gap-2 w-full mt-3">
                                 <button
                                     onClick={() => setSelectedStudent(student)}
                                     className="flex-1 py-3 bg-[var(--primary)] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[var(--primary-light)] transition-smooth shadow-lg shadow-[var(--primary)]/20"
@@ -176,6 +233,42 @@ const StudentDirectory = () => {
                                     </a>
                                 )}
                             </div>
+
+                            {user?.role === 'admin' && (
+                                <div className="mt-4 w-full">
+                                    {/* Status Badge */}
+                                    <div className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-3 ${student.user?.isVerified
+                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                        : 'bg-amber-50 text-amber-600 border border-amber-200'
+                                        }`}>
+                                        {student.user?.isVerified
+                                            ? <><ShieldCheck size={12} /> Verified Student</>
+                                            : <><ShieldOff size={12} /> Not Verified</>
+                                        }
+                                    </div>
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-2 w-full">
+                                        <button
+                                            onClick={() => handleUpdateStatus(student.user._id, !student.user?.isVerified)}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${student.user?.isVerified
+                                                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200'
+                                                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                                                }`}
+                                        >
+                                            {student.user?.isVerified
+                                                ? <><ShieldOff size={13} /> Revoke</>
+                                                : <><ShieldCheck size={13} /> Approve</>
+                                            }
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteStudent(student.user._id, student.user.name)}
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md shadow-red-200"
+                                        >
+                                            <Trash2 size={13} /> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                     {filteredStudents.length === 0 && (

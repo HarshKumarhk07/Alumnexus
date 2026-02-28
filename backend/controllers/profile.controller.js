@@ -10,7 +10,7 @@ const Notification = require('../models/notification.model');
 exports.getStudentProfiles = async (req, res) => {
     try {
         // Find all users with role 'student'
-        const users = await User.find({ role: 'student' }).select('name email');
+        const users = await User.find({ role: 'student' }).select('name email isVerified');
 
         // Find all student profiles
         const profiles = await StudentProfile.find();
@@ -23,7 +23,8 @@ exports.getStudentProfiles = async (req, res) => {
                 user: {
                     _id: user._id,
                     name: user.name,
-                    email: user.email
+                    email: user.email,
+                    isVerified: user.isVerified
                 },
                 branch: profile ? profile.branch : 'Not Set',
                 year: profile ? profile.year : 'N/A',
@@ -49,7 +50,7 @@ exports.getStudentProfiles = async (req, res) => {
 exports.getAlumniProfiles = async (req, res) => {
     try {
         // Find all users with role 'alumni'
-        const users = await User.find({ role: 'alumni' }).select('name email');
+        const users = await User.find({ role: 'alumni' }).select('name email isVerified');
 
         // Find all alumni profiles
         const profiles = await AlumniProfile.find();
@@ -62,7 +63,8 @@ exports.getAlumniProfiles = async (req, res) => {
                 user: {
                     _id: user._id,
                     name: user.name,
-                    email: user.email
+                    email: user.email,
+                    isVerified: user.isVerified
                 },
                 batchYear: profile ? profile.batchYear : 'N/A',
                 branch: profile ? profile.branch : 'Not Set',

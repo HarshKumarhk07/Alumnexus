@@ -50,6 +50,63 @@ exports.createBlog = async (req, res) => {
     }
 };
 
+// @desc    Update Blog
+// @route   PUT /api/blogs/:id
+// @access  Private (Author/Admin)
+exports.updateBlog = async (req, res) => {
+    try {
+        const blog = await Blog.findById(req.params.id);
+        if (!blog) return res.status(404).json({ success: false, message: 'Blog not found' });
+
+        if (blog.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Not authorized to edit this blog' });
+        }
+
+        const { title, content, category, coverImage } = req.body;
+        const updateData = {};
+        if (title) updateData.title = title;
+        if (content) updateData.content = content;
+        if (category) updateData.category = category;
+        if (coverImage) updateData.coverImage = coverImage;
+
+        const updated = await Blog.findByIdAndUpdate(req.params.id, updateData, { new: true })
+            .populate('author', 'name')
+            .populate('comments.user', 'name');
+
+        res.status(200).json({ success: true, data: updated });
+    } catch (err) {
+        console.error('updateBlog error:', err.message);
+        res.status(500).json({ success: false, message: err.message || 'Update failed' });
+    }
+};
+
+// @desc    Upload Blog Cover Image
+// @route   POST /api/blogs/:id/cover-image
+// @access  Private (Author/Admin)
+exports.uploadCoverImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No image provided' });
+        }
+        const blog = await Blog.findById(req.params.id);
+        if (!blog) return res.status(404).json({ success: false, message: 'Blog not found' });
+
+        if (blog.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Not authorized' });
+        }
+
+        // req.file.path is the Cloudinary URL set by multer-storage-cloudinary
+        blog.coverImage = req.file.path;
+        await blog.save();
+
+        res.status(200).json({ success: true, url: req.file.path });
+    } catch (err) {
+        console.error('uploadCoverImage error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+
 // @desc    Like Blog
 // @route   PUT /api/blogs/like/:id
 // @access  Private

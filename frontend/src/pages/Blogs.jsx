@@ -3,7 +3,7 @@ import { blogService } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
 import {
     Heart, MessageSquare, User, Calendar, Plus,
-    X, Image as ImageIcon, Search, Tag, ArrowRight, Upload, Trash2
+    X, Image as ImageIcon, Search, Tag, ArrowRight, Upload, Trash2, Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CommentModal from '../components/CommentModal';
@@ -13,6 +13,9 @@ const Blogs = () => {
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [editBlog, setEditBlog] = useState(null);
+    const [editForm, setEditForm] = useState({ title: '', content: '', category: '', image: null, imagePreview: null });
+    const [isEditing, setIsEditing] = useState(false);
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [likeAnimId, setLikeAnimId] = useState(null);
@@ -117,6 +120,37 @@ const Blogs = () => {
         }
     };
 
+    const openEditModal = (blog) => {
+        setEditBlog(blog);
+        setEditForm({ title: blog.title, content: blog.content, category: blog.category, image: null, imagePreview: null });
+    };
+
+    const handleEditBlog = async (e) => {
+        e.preventDefault();
+        setIsEditing(true);
+        try {
+            const payload = {
+                title: editForm.title,
+                content: editForm.content,
+                category: editForm.category
+            };
+            // Step 1: Upload new image if selected
+            if (editForm.image) {
+                const imgRes = await blogService.uploadBlogCoverImage(editBlog._id, editForm.image);
+                payload.coverImage = imgRes.data.url;
+            }
+            // Step 2: Update text fields (+ coverImage URL if uploaded)
+            const res = await blogService.updateBlog(editBlog._id, payload);
+            toast.success('Blog updated!');
+            setBlogs(prev => prev.map(b => b._id === editBlog._id ? res.data.data : b));
+            setEditBlog(null);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update blog');
+        } finally {
+            setIsEditing(false);
+        }
+    };
+
     // Re-sync active blog when blogs refresh
     useEffect(() => {
         if (activeBlogForComments) {
@@ -203,12 +237,16 @@ const Blogs = () => {
                                     </span>
                                 </div>
                                 {((String(blog.author?._id || blog.author) === String(user._id || user.id)) || user.role === 'admin') && (
-                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-smooth">
+                                    <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-smooth">
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteBlog(blog._id);
-                                            }}
+                                            onClick={(e) => { e.stopPropagation(); openEditModal(blog); }}
+                                            className="p-2 bg-blue-500/90 hover:bg-blue-600 text-white rounded-xl backdrop-blur-sm shadow-lg transition-smooth"
+                                            title="Edit Blog"
+                                        >
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteBlog(blog._id); }}
                                             className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-xl backdrop-blur-sm shadow-lg transition-smooth"
                                             title="Delete Blog"
                                         >
@@ -343,6 +381,89 @@ const Blogs = () => {
 
                             <button type="submit" className="w-full py-5 bg-[var(--primary)] text-white rounded-2xl font-bold text-lg premium-shadow hover:bg-[var(--primary-light)] transition-smooth hover:scale-[1.02] active:scale-[0.98]">
                                 Publish Article
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Post Modal */}
+            {editBlog && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[32px] w-full max-w-2xl premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-3xl font-extrabold text-[var(--primary)]">Edit Post</h2>
+                                <p className="text-sm text-[var(--primary-light)] font-medium mt-1">Update your article content.</p>
+                            </div>
+                            <button onClick={() => setEditBlog(null)} className="p-3 hover:bg-[var(--accent)] rounded-2xl transition-smooth">
+                                <X size={28} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditBlog} className="p-10 space-y-8 overflow-y-auto custom-scrollbar">
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Category</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {categories.slice(1).map(cat => (
+                                        <button
+                                            key={cat} type="button"
+                                            onClick={() => setEditForm({ ...editForm, category: cat })}
+                                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-smooth border-2 ${editForm.category === cat ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-gray-50 border-gray-100'}`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Title</label>
+                                <input
+                                    required
+                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold"
+                                    value={editForm.title}
+                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Content</label>
+                                <textarea
+                                    required rows="6"
+                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth resize-none leading-relaxed"
+                                    value={editForm.content}
+                                    onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Cover Image (Optional)</label>
+                                {editForm.imagePreview ? (
+                                    <div className="relative rounded-2xl overflow-hidden border-2 border-gray-100">
+                                        <img src={editForm.imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                                        <button type="button" onClick={() => setEditForm({ ...editForm, image: null, imagePreview: null })} className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-lg hover:bg-black/80 transition-smooth">
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="flex items-center gap-4 w-full px-6 py-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-[var(--primary)] transition-smooth">
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) setEditForm({ ...editForm, image: file, imagePreview: URL.createObjectURL(file) });
+                                        }} />
+                                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-[var(--primary)] shrink-0">
+                                            <Upload size={20} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-sm">{editBlog?.coverImage ? '✓ Current image kept — click to replace' : 'Upload Cover Image'}</p>
+                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                                        </div>
+                                    </label>
+                                )}
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isEditing}
+                                className={`w-full py-5 bg-[var(--primary)] text-white rounded-2xl font-bold text-lg premium-shadow transition-smooth ${isEditing ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[var(--primary-light)] hover:scale-[1.02] active:scale-[0.98]'}`}
+                            >
+                                {isEditing ? 'Saving...' : 'Save Changes'}
                             </button>
                         </form>
                     </div>

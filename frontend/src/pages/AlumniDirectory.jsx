@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { profileService } from '../services/api.service';
+import { profileService, adminService } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
 import {
     Search, Filter, MapPin, Briefcase,
-    GraduationCap, Mail, MessageCircle, ShieldCheck,
-    UserCheck, ExternalLink, Linkedin, Globe, Loader2, X, Github
+    GraduationCap, Mail, MessageCircle, ShieldCheck, ShieldOff,
+    UserCheck, ExternalLink, Linkedin, Globe, Loader2, X, Github, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -59,21 +59,43 @@ const AlumniDirectory = () => {
     });
 
     const handleSendRequest = async (e) => {
-        e.preventDefault();
+        // ... (existing code)
+    };
+
+    const handleDeleteAlumni = async (id, name) => {
+        if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) return;
         try {
-            setRequesting(true);
-            await profileService.createRequest({
-                receiverId: selectedAlumni.user._id,
-                type: requestData.type,
-                message: requestData.message
-            });
-            toast.success('Request sent successfully!');
-            setShowRequestModal(false);
-            setRequestData({ type: '', message: '' });
+            await adminService.deleteUser(id);
+            toast.success('Alumni deleted successfully');
+            fetchAlumni();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to send request');
-        } finally {
-            setRequesting(false);
+            toast.error(err.response?.data?.message || 'Failed to delete alumni');
+        }
+    };
+
+    const handleUpdateStatus = async (id, newVerifiedState) => {
+        const action = newVerifiedState ? 'approve' : 'revoke';
+        if (!window.confirm(`Are you sure you want to ${action} this alumni?`)) return;
+
+        try {
+            await adminService.updateUserStatus(id, {
+                isVerified: newVerifiedState,
+                status: newVerifiedState ? 'approved' : 'rejected'
+            });
+            toast.success(`Alumni ${newVerifiedState ? 'approved' : 'revoked'} successfully`);
+            // Optimistically update local state so the card reflects the new status immediately
+            setAlumni(prev => prev.map(a => {
+                if (String(a.user._id) === String(id)) {
+                    return {
+                        ...a,
+                        verificationStatus: newVerifiedState ? 'approved' : 'rejected',
+                        user: { ...a.user, isVerified: newVerifiedState }
+                    };
+                }
+                return a;
+            }));
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update status');
         }
     };
 
@@ -152,7 +174,7 @@ const AlumniDirectory = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredAlumni.map((item) => (
-                        <div key={item._id} className="glass-card p-8 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[32px]">
+                        <div key={item._id} className="glass-card p-5 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[32px]">
                             {/* Verification Badge */}
                             {item.verificationStatus === 'approved' && (
                                 <div className="absolute top-4 right-4 text-blue-600 bg-blue-50 p-2 rounded-xl" title="Verified Alumni">
@@ -160,25 +182,25 @@ const AlumniDirectory = () => {
                                 </div>
                             )}
 
-                            <div className="w-24 h-24 rounded-[32px] bg-[var(--accent)] border-4 border-white premium-shadow mb-6 overflow-hidden">
+                            <div className="w-16 h-16 rounded-[24px] bg-[var(--accent)] border-4 border-white premium-shadow mb-3 overflow-hidden">
                                 {item.profilePhoto && item.profilePhoto !== 'no-photo.jpg' ? (
                                     <img src={item.profilePhoto} alt={item.user.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[var(--primary)]">
+                                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[var(--primary)]">
                                         {item.user.name.charAt(0)}
                                     </div>
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <h3 className="text-2xl font-bold text-[var(--primary)]">{item.user.name}</h3>
+                            <div className="space-y-1">
+                                <h3 className="text-lg font-bold text-[var(--primary)]">{item.user.name}</h3>
                                 <p className="text-[var(--primary-light)] font-bold text-sm uppercase tracking-widest">{item.designation}</p>
                                 <div className="flex items-center justify-center gap-1.5 text-gray-500 font-bold text-xs uppercase">
                                     <Briefcase size={14} className="text-[var(--primary)]" /> {item.company}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 w-full gap-3 mt-8">
+                            <div className="grid grid-cols-2 w-full gap-2 mt-4">
                                 <div className="bg-white/50 p-3 rounded-2xl border border-[var(--border)]">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Branch</p>
                                     <p className="text-xs font-bold truncate">{item.branch}</p>
@@ -189,7 +211,7 @@ const AlumniDirectory = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 w-full mt-6">
+                            <div className="flex gap-2 w-full mt-3">
                                 <button
                                     onClick={() => setSelectedAlumni(item)}
                                     className="flex-1 py-3 bg-[var(--primary)] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[var(--primary-light)] transition-smooth shadow-lg shadow-[var(--primary)]/20"
@@ -220,6 +242,42 @@ const AlumniDirectory = () => {
                             {item.mentorshipAvailable && (
                                 <div className="mt-4 flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-amber-100">
                                     <UserCheck size={14} /> Available for Mentoring
+                                </div>
+                            )}
+
+                            {user?.role === 'admin' && (
+                                <div className="mt-4 w-full">
+                                    {/* Status Badge */}
+                                    <div className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-3 ${item.user?.isVerified
+                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                        : 'bg-amber-50 text-amber-600 border border-amber-200'
+                                        }`}>
+                                        {item.user?.isVerified
+                                            ? <><ShieldCheck size={12} /> Approved Alumni</>
+                                            : <><ShieldOff size={12} /> Pending Approval</>
+                                        }
+                                    </div>
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-2 w-full">
+                                        <button
+                                            onClick={() => handleUpdateStatus(item.user._id, !item.user?.isVerified)}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${item.user?.isVerified
+                                                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200'
+                                                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                                                }`}
+                                        >
+                                            {item.user?.isVerified
+                                                ? <><ShieldOff size={13} /> Revoke</>
+                                                : <><ShieldCheck size={13} /> Approve</>
+                                            }
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteAlumni(item.user._id, item.user.name)}
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md shadow-red-200"
+                                        >
+                                            <Trash2 size={13} /> Delete
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

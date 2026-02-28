@@ -86,7 +86,18 @@ export const jobService = {
 
 export const blogService = {
     getBlogs: (category) => API.get('/blogs', { params: { category } }),
-    createBlog: (data) => API.post('/blogs', data),
+    createBlog: (data) => {
+        if (data instanceof FormData) {
+            return API.post('/blogs', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        }
+        return API.post('/blogs', data);
+    },
+    updateBlog: (id, data) => API.put(`/blogs/${id}`, data),
+    uploadBlogCoverImage: (id, file) => {
+        const fd = new FormData();
+        fd.append('image', file);
+        return API.post(`/blogs/${id}/cover-image`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
     likeBlog: (id) => API.put(`/blogs/like/${id}`),
     addComment: (id, text) => API.post(`/blogs/${id}/comment`, { text }),
     deleteComment: (id, commentId) => API.delete(`/blogs/${id}/comment/${commentId}`),
@@ -116,7 +127,10 @@ export const adminService = {
     getUsers: (params) => API.get('/admin/users', { params }),
     exportUsers: () => API.get('/admin/export-users', { responseType: 'blob' }),
     postAnnouncement: (data) => API.post('/admin/announcement', data),
-    sendBulkEmail: (data) => API.post('/admin/bulk-email', data)
+    sendBulkEmail: (data) => API.post('/admin/bulk-email', data),
+    deleteUser: (id) => API.delete(`/admin/users/${id}`),
+    updateUserStatus: (id, data) => API.put(`/admin/users/status/${id}`, data),
+    exportStudents: () => API.get('/admin/export-students', { responseType: 'blob' })
 };
 
 export const notificationService = {

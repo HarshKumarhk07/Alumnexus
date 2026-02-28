@@ -97,23 +97,26 @@ const Gallery = () => {
                 {(user.role === 'admin' || (user.role === 'alumni' && user.isVerified)) && (
                     <button
                         onClick={() => setShowModal(true)}
-                        className="px-8 py-4 bg-[var(--primary)] text-white rounded-2xl font-bold premium-shadow hover:scale-105 transition-smooth flex items-center gap-2"
+                        className="px-8 py-4 bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] text-white rounded-2xl font-bold premium-shadow hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-3 border border-white/20"
                     >
-                        <Upload size={20} /> Upload Moment
+                        <div className="p-1.5 bg-white/20 rounded-lg">
+                            <Upload size={18} />
+                        </div>
+                        <span className="tracking-tight">Share a Memory</span>
                     </button>
                 )}
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-3 bg-[var(--surface)] p-2 rounded-2xl border border-[var(--border)] inline-flex">
+            <div className="flex flex-wrap gap-2 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-[var(--border)] inline-flex self-start">
                 {categories.map(cat => (
                     <button
                         key={cat}
                         onClick={() => setFilter(cat)}
-                        className={`px - 6 py - 2 rounded - xl font - bold text - sm transition - smooth ${filter === cat
-                            ? 'bg-[var(--primary)] text-white premium-shadow'
-                            : 'text-gray-500 hover:bg-white hover:text-[var(--primary)]'
-                            } `}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${filter === cat
+                            ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20 scale-105'
+                            : 'text-gray-500 hover:bg-white hover:text-[var(--primary)] hover:shadow-sm'
+                            }`}
                     >
                         {cat}
                     </button>
@@ -228,16 +231,17 @@ const Gallery = () => {
                             <button
                                 disabled={isUploading}
                                 type="submit"
-                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isUploading ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'} `}
+                                className={`w-full py-4 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white rounded-2xl font-bold premium-shadow hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 ${isUploading ? 'opacity-70 cursor-not-allowed' : ''} `}
                             >
                                 {isUploading ? (
                                     <>
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Preserving...
+                                        <span className="tracking-wide">Preserving Your Memory...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Plus size={20} /> Share Memory
+                                        <Camera size={20} />
+                                        <span className="tracking-wide">Share This Moment</span>
                                     </>
                                 )}
                             </button>

@@ -37,12 +37,18 @@ const userSchema = new mongoose.Schema({
 });
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', function (next) {
     if (!this.isModified('password')) {
         return next();
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    bcrypt.genSalt(10, (err, salt) => {
+        if (err) return next(err);
+        bcrypt.hash(this.password, salt, (err, hash) => {
+            if (err) return next(err);
+            this.password = hash;
+            next();
+        });
+    });
 });
 
 // Match user entered password to hashed password in database

@@ -45,10 +45,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
     };
 
     React.useEffect(() => {
-        if (isOpen) {
-            if (user?.role === 'alumni' && activeTab === 'professional') {
+        if (isOpen && user?.role) {
+            if (user.role === 'alumni' && activeTab === 'professional') {
                 loadAlumniProfile();
-            } else if (user?.role === 'student' && activeTab === 'academic') {
+            } else if (user.role === 'student' && activeTab === 'academic') {
                 loadStudentProfile();
             }
         }

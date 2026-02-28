@@ -4,10 +4,11 @@ import {
     Users, Briefcase, BookOpen, Bell, TrendingUp,
     ArrowUpRight, Clock, Star, Target, ShieldCheck,
     FileText, Mail, Download, CheckCircle2, XCircle, X,
-    Heart, MessageSquare, Image as ImageIcon, Handshake, MessageCircle, UserCheck, Loader2, GraduationCap
+    Heart, MessageSquare, Image as ImageIcon, Handshake, MessageCircle, UserCheck, Loader2, GraduationCap, Upload,
+    Newspaper, CalendarDays
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { adminService, notificationService, jobService, blogService, profileService } from '../services/api.service';
+import { adminService, notificationService, jobService, blogService, profileService, eventService } from '../services/api.service';
 import toast from 'react-hot-toast';
 import ImageSlider from '../components/ImageSlider';
 import CommentModal from '../components/CommentModal';
@@ -24,10 +25,27 @@ const Dashboard = () => {
 
     // Admin Announcement State
     const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
-    const [announcement, setAnnouncement] = useState({ message: '', targetRole: 'all', targetUsers: [] });
+    const [announcement, setAnnouncement] = useState({ message: '', targetRole: 'all' });
     const [isPosting, setIsPosting] = useState(false);
-    const [alumniList, setAlumniList] = useState([]);
-    const [alumniSearch, setAlumniSearch] = useState('');
+
+    // Admin Engagement Post State
+    const [showEngagementModal, setShowEngagementModal] = useState(false);
+    const [engagementPost, setEngagementPost] = useState({ title: '', content: '', category: 'General', targetRole: 'all' });
+    const [engagementImage, setEngagementImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [isPostingEngagement, setIsPostingEngagement] = useState(false);
+
+    // Admin Newsletter State
+    const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+    const [newsletter, setNewsletter] = useState({ subject: '', body: '', targetRole: 'all' });
+    const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
+
+    // Admin Event Invitation State
+    const [showEventModal, setShowEventModal] = useState(false);
+    const [eventData, setEventData] = useState({ selectedEventId: '', targetRole: 'all', isReminder: false });
+    const [existingEvents, setExistingEvents] = useState([]);
+    const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+    const [isSendingEvent, setIsSendingEvent] = useState(false);
 
     // Admin Users Modal State
     const [showUsersModal, setShowUsersModal] = useState(false);
@@ -42,12 +60,29 @@ const Dashboard = () => {
         fetchDashboardData();
     }, [user]);
 
+    useEffect(() => {
+        const fetchEvents = async () => {
+            if (showEventModal && existingEvents.length === 0) {
+                setIsLoadingEvents(true);
+                try {
+                    const res = await eventService.getEvents();
+                    setExistingEvents(res.data.data || []);
+                } catch (error) {
+                    toast.error('Failed to load events');
+                } finally {
+                    setIsLoadingEvents(false);
+                }
+            }
+        };
+        fetchEvents();
+    }, [showEventModal]);
+
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
             const [notifyRes, statsRes, blogsRes] = await Promise.all([
                 notificationService.getNotifications(),
-                adminService.getPublicStats(),
+                user.role === 'admin' ? adminService.getStats() : adminService.getPublicStats(),
                 blogService.getBlogs()
             ]);
             setNotifications(notifyRes.data.data);
@@ -111,23 +146,89 @@ const Dashboard = () => {
 
     const handlePostAnnouncement = async (e) => {
         e.preventDefault();
-
-        if (announcement.targetRole === 'specific' && announcement.targetUsers.length === 0) {
-            return toast.error("Please select at least one alumni.");
-        }
-
         setIsPosting(true);
         try {
-            const res = await adminService.postAnnouncement(announcement);
+            const res = await adminService.postAnnouncement({
+                message: announcement.message,
+                targetRole: announcement.targetRole
+            });
             toast.success(res.data.message || 'Announcement posted successfully!');
             setShowAnnouncementModal(false);
-            setAnnouncement({ message: '', targetRole: 'all', targetUsers: [] });
-            setAlumniSearch('');
+            setAnnouncement({ message: '', targetRole: 'all' });
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to post announcement');
-            console.error('Post announcement error:', error);
         } finally {
             setIsPosting(false);
+        }
+    };
+
+    const handlePostEngagement = async (e) => {
+        e.preventDefault();
+        setIsPostingEngagement(true);
+        try {
+            const formData = new FormData();
+            formData.append('title', engagementPost.title);
+            formData.append('content', engagementPost.content);
+            formData.append('category', engagementPost.category);
+            formData.append('targetRole', engagementPost.targetRole);
+            if (engagementImage) formData.append('image', engagementImage);
+
+            await blogService.createBlog(formData);
+            toast.success('Engagement post published successfully!');
+            setShowEngagementModal(false);
+            setEngagementPost({ title: '', content: '', category: 'General', targetRole: 'all' });
+            setEngagementImage(null);
+            setImagePreview(null);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to post engagement content');
+        } finally {
+            setIsPostingEngagement(false);
+        }
+    };
+
+    const handleSendNewsletter = async (e) => {
+        e.preventDefault();
+        setIsSendingNewsletter(true);
+        try {
+            const msg = `📰 NEWSLETTER: ${newsletter.subject}\n\n${newsletter.body}`;
+            await adminService.postAnnouncement({ message: msg, targetRole: newsletter.targetRole });
+            toast.success('Newsletter sent successfully!');
+            setShowNewsletterModal(false);
+            setNewsletter({ subject: '', body: '', targetRole: 'all' });
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send newsletter');
+        } finally {
+            setIsSendingNewsletter(false);
+        }
+    };
+
+    const handleSendEvent = async (e) => {
+        e.preventDefault();
+        setIsSendingEvent(true);
+        try {
+            const prefix = eventData.isReminder ? '🔔 EVENT REMINDER' : '🎉 EVENT INVITATION';
+            const selected = existingEvents.find(ev => ev._id === eventData.selectedEventId);
+            if (!selected) { toast.error('Please select an event'); setIsSendingEvent(false); return; }
+            const dateStr = selected.dateTime
+                ? new Date(selected.dateTime).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' })
+                : '';
+            const venue = selected.meetingType === 'online'
+                ? `Online${selected.meetingLink ? ' — ' + selected.meetingLink : ''}`
+                : (selected.location || '');
+            const msg = [
+                `${prefix}: ${selected.title}`,
+                selected.description && `\n${selected.description}`,
+                venue && `\n📍 ${venue}`,
+                dateStr && `\n🕐 When: ${dateStr}`
+            ].filter(Boolean).join('');
+            await adminService.postAnnouncement({ message: msg, targetRole: eventData.targetRole });
+            toast.success(`Event ${eventData.isReminder ? 'reminder' : 'invitation'} sent!`);
+            setShowEventModal(false);
+            setEventData({ selectedEventId: '', targetRole: 'all', isReminder: false });
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send event notification');
+        } finally {
+            setIsSendingEvent(false);
         }
     };
 
@@ -151,6 +252,37 @@ const Dashboard = () => {
             setAlumniList(res.data.data);
         } catch (err) {
             toast.error('Failed to fetch alumni list');
+        }
+    };
+
+    const handleDeleteUser = async (id, name) => {
+        if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) return;
+        try {
+            await adminService.deleteUser(id);
+            toast.success('User deleted successfully');
+            setModalUsers(modalUsers.filter(u => u._id !== id));
+            fetchDashboardData();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to delete user');
+        }
+    };
+
+    const handleUpdateUserStatus = async (id, isVerified, currentRole) => {
+        const action = isVerified ? 'verify' : 'revoke';
+        if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+
+        try {
+            await adminService.updateUserStatus(id, {
+                isVerified,
+                status: currentRole === 'alumni' ? (isVerified ? 'approved' : 'rejected') : undefined
+            });
+            toast.success(`User ${isVerified ? 'verified' : 'revoked'} successfully`);
+            // Refresh modal list
+            const res = await adminService.getUsers({ role: modalRole });
+            setModalUsers(res.data.data);
+            fetchDashboardData();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update user status');
         }
     };
 
@@ -449,9 +581,17 @@ const Dashboard = () => {
                                     <Mail size={18} />
                                     <span className="text-sm font-bold">Post Announcement</span>
                                 </button>
-                                <button className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left">
+                                <button onClick={() => setShowEngagementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
                                     <FileText size={18} />
-                                    <span className="text-sm font-bold">Write Newsletter</span>
+                                    <span className="text-sm font-bold">Post Engagement Content</span>
+                                </button>
+                                <button onClick={() => setShowNewsletterModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                    <Newspaper size={18} />
+                                    <span className="text-sm font-bold">Send Newsletter</span>
+                                </button>
+                                <button onClick={() => setShowEventModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                    <CalendarDays size={18} />
+                                    <span className="text-sm font-bold">Event Invitation / Reminder</span>
                                 </button>
                             </div>
                         </div>
@@ -465,10 +605,10 @@ const Dashboard = () => {
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
                         <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in">
                             <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
-                                <h2 className="text-2xl font-bold text-[var(--primary)]">Post Global Announcement</h2>
+                                <h2 className="text-2xl font-bold text-[var(--primary)]">Post Announcement</h2>
                                 <button onClick={() => setShowAnnouncementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                             </div>
-                            <form onSubmit={handlePostAnnouncement} className="p-10 space-y-6">
+                            <form onSubmit={handlePostAnnouncement} className="p-8 space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">Message</label>
                                     <textarea required rows="4" className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none"
@@ -479,70 +619,31 @@ const Dashboard = () => {
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-sm font-bold">Target Audience</label>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {['all', 'student', 'alumni', 'specific'].map((role) => (
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[
+                                            { value: 'all', label: '🌐 All Users' },
+                                            { value: 'alumni', label: '🎓 Alumni Only' },
+                                            { value: 'student', label: '📚 Students Only' }
+                                        ].map(({ value, label }) => (
                                             <button
-                                                key={role}
+                                                key={value}
                                                 type="button"
-                                                onClick={() => setAnnouncement({ ...announcement, targetRole: role })}
-                                                className={`p-3 rounded-xl border font-bold text-sm transition-smooth capitalize
-                                                ${announcement.targetRole === role
+                                                onClick={() => setAnnouncement({ ...announcement, targetRole: value })}
+                                                className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center
+                                                ${announcement.targetRole === value
                                                         ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
                                                         : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)]'}`}
                                             >
-                                                {role === 'specific' ? 'Specific Alumni' : role}
+                                                {label}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-
-                                {announcement.targetRole === 'specific' && (
-                                    <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-[var(--border)]">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-sm font-bold">Select Alumni ({announcement.targetUsers.length} selected)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Search by name..."
-                                                value={alumniSearch}
-                                                onChange={(e) => setAlumniSearch(e.target.value)}
-                                                className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none"
-                                            />
-                                        </div>
-                                        <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                                            {alumniList.filter(a => a.name.toLowerCase().includes(alumniSearch.toLowerCase())).map(alumni => (
-                                                <label key={alumni._id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-smooth border border-transparent hover:border-gray-200">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={announcement.targetUsers.includes(alumni._id)}
-                                                        onChange={(e) => {
-                                                            const newUsers = e.target.checked
-                                                                ? [...announcement.targetUsers, alumni._id]
-                                                                : announcement.targetUsers.filter(id => id !== alumni._id);
-                                                            setAnnouncement({ ...announcement, targetUsers: newUsers });
-                                                        }}
-                                                        className="w-4 h-4 text-[var(--primary)] rounded border-gray-300 focus:ring-[var(--primary)]"
-                                                    />
-                                                    <div>
-                                                        <p className="font-bold text-sm">{alumni.name}</p>
-                                                        <p className="text-xs text-gray-500">{alumni.email}</p>
-                                                    </div>
-                                                </label>
-                                            ))}
-                                            {alumniList.length === 0 && <p className="text-sm text-center text-gray-400 py-4">Loading alumni...</p>}
-                                        </div>
-                                    </div>
-                                )}
-
                                 <button disabled={isPosting} type="submit" className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPosting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
                                     {isPosting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Posting...
-                                        </>
+                                        <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</>
                                     ) : (
-                                        <>
-                                            <Mail size={20} /> Send Announcement
-                                        </>
+                                        <><Mail size={20} /> Send Announcement</>
                                     )}
                                 </button>
                             </form>
@@ -551,7 +652,251 @@ const Dashboard = () => {
                 )
             }
 
-            {/* Users List Modal */}
+            {/* Engagement Post Modal */}
+            {showEngagementModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-bold text-[var(--primary)]">Post Engagement Content</h2>
+                                <p className="text-sm text-gray-500 mt-1">Will appear on the community blog feed</p>
+                            </div>
+                            <button onClick={() => setShowEngagementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handlePostEngagement} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Title</label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="Enter a catchy title..."
+                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                    value={engagementPost.title}
+                                    onChange={(e) => setEngagementPost({ ...engagementPost, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Category</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                        value={engagementPost.category}
+                                        onChange={(e) => setEngagementPost({ ...engagementPost, category: e.target.value })}
+                                    >
+                                        {['General', 'Career', 'Tech', 'Events', 'Opportunities', 'Community'].map(c => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Audience</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                        value={engagementPost.targetRole}
+                                        onChange={(e) => setEngagementPost({ ...engagementPost, targetRole: e.target.value })}
+                                    >
+                                        <option value="all">🌐 All Users</option>
+                                        <option value="alumni">🎓 Alumni Only</option>
+                                        <option value="student">📚 Students Only</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Content</label>
+                                <textarea
+                                    required
+                                    rows="5"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium"
+                                    placeholder="Write your post content here..."
+                                    value={engagementPost.content}
+                                    onChange={(e) => setEngagementPost({ ...engagementPost, content: e.target.value })}
+                                />
+                            </div>
+                            {/* Image Upload */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold flex items-center gap-2"><ImageIcon size={14} /> Cover Image <span className="text-gray-400 font-normal">(optional)</span></label>
+                                {imagePreview ? (
+                                    <div className="relative rounded-xl overflow-hidden border border-[var(--border)]">
+                                        <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setEngagementImage(null); setImagePreview(null); }}
+                                            className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-lg hover:bg-black/80 transition-smooth"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="flex flex-col items-center justify-center w-full h-28 bg-gray-50 border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:bg-[var(--accent)] transition-smooth group">
+                                        <Upload size={22} className="text-gray-400 group-hover:text-[var(--primary)] mb-1 transition-smooth" />
+                                        <span className="text-xs text-gray-400 group-hover:text-[var(--primary)] font-medium transition-smooth">Click to upload image</span>
+                                        <span className="text-[11px] text-gray-300">JPG, PNG, WEBP — max 5MB</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    setEngagementImage(file);
+                                                    setImagePreview(URL.createObjectURL(file));
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+                            <button
+                                disabled={isPostingEngagement}
+                                type="submit"
+                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPostingEngagement ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}
+                            >
+                                {isPostingEngagement ? (
+                                    <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Publishing...</>
+                                ) : (
+                                    <><FileText size={20} /> Publish Post</>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Newsletter Modal */}
+            {showNewsletterModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><Newspaper size={22} /> Send Newsletter</h2>
+                                <p className="text-sm text-gray-500 mt-1">Delivered as an in-app notification</p>
+                            </div>
+                            <button onClick={() => setShowNewsletterModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleSendNewsletter} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Subject / Headline</label>
+                                <input required type="text" placeholder="e.g. Monthly Alumni Update — February 2026"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                    value={newsletter.subject}
+                                    onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Body</label>
+                                <textarea required rows="5" placeholder="Write the newsletter content here..."
+                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium"
+                                    value={newsletter.body}
+                                    onChange={(e) => setNewsletter({ ...newsletter, body: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Target Audience</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
+                                        <button key={value} type="button"
+                                            onClick={() => setNewsletter({ ...newsletter, targetRole: value })}
+                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${newsletter.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                        >{label}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button disabled={isSendingNewsletter} type="submit"
+                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingNewsletter ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                {isSendingNewsletter ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><Newspaper size={20} /> Send Newsletter</>}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Event Invitation / Reminder Modal */}
+            {showEventModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><CalendarDays size={22} /> {eventData.isReminder ? 'Event Reminder' : 'Event Invitation'}</h2>
+                                <p className="text-sm text-gray-500 mt-1">Sent as an in-app notification to selected audience</p>
+                            </div>
+                            <button onClick={() => setShowEventModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleSendEvent} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                            {/* Invitation vs Reminder toggle */}
+                            <div className="flex gap-3">
+                                {[{ val: false, label: '🎉 Invitation' }, { val: true, label: '🔔 Reminder' }].map(({ val, label }) => (
+                                    <button key={String(val)} type="button"
+                                        onClick={() => setEventData({ ...eventData, isReminder: val })}
+                                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-smooth ${eventData.isReminder === val ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                    >{label}</button>
+                                ))}
+                            </div>
+                            {/* Select from existing events */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Select Event</label>
+                                {isLoadingEvents ? (
+                                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl text-gray-400">
+                                        <div className="w-4 h-4 border-2 border-gray-300 border-t-[var(--primary)] rounded-full animate-spin"></div>
+                                        Loading events...
+                                    </div>
+                                ) : existingEvents.length === 0 ? (
+                                    <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
+                                        ⚠️ No events found. Create an event first from the Events page.
+                                    </div>
+                                ) : (
+                                    <select
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                        value={eventData.selectedEventId}
+                                        onChange={(e) => setEventData({ ...eventData, selectedEventId: e.target.value })}
+                                    >
+                                        <option value="">-- Choose an event --</option>
+                                        {existingEvents.map(ev => (
+                                            <option key={ev._id} value={ev._id}>
+                                                {ev.title} — {new Date(ev.dateTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                            {/* Selected event preview card */}
+                            {eventData.selectedEventId && (() => {
+                                const ev = existingEvents.find(e => e._id === eventData.selectedEventId);
+                                if (!ev) return null;
+                                return (
+                                    <div className="p-4 bg-[var(--surface)] border-2 border-[var(--border)] rounded-2xl space-y-2 text-sm">
+                                        <p className="font-bold text-[var(--primary)] text-base">{ev.title}</p>
+                                        {ev.description && <p className="text-gray-500 line-clamp-2">{ev.description}</p>}
+                                        <div className="flex flex-wrap gap-3 text-gray-600">
+                                            {ev.dateTime && <span>🕐 {new Date(ev.dateTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>}
+                                            {ev.meetingType === 'online'
+                                                ? <span>💻 Online</span>
+                                                : ev.location && <span>📍 {ev.location}</span>}
+                                            {ev.speakerName && <span>🎤 {ev.speakerName}</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Target Audience</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
+                                        <button key={value} type="button"
+                                            onClick={() => setEventData({ ...eventData, targetRole: value })}
+                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${eventData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                        >{label}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button disabled={isSendingEvent} type="submit"
+                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingEvent ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                {isSendingEvent ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><CalendarDays size={20} /> Send {eventData.isReminder ? 'Reminder' : 'Invitation'}</>}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {
                 showUsersModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
@@ -577,9 +922,29 @@ const Dashboard = () => {
                                                         u.name.charAt(0)
                                                     )}
                                                 </div>
-                                                <div className="overflow-hidden">
+                                                <div className="flex-1 min-w-0">
                                                     <p className="font-bold text-[var(--primary)] truncate">{u.name}</p>
                                                     <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                                                    <div className="flex gap-2 mt-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleUpdateUserStatus(u._id, !u.isVerified, u.role);
+                                                            }}
+                                                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-smooth ${u.isVerified ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                                                        >
+                                                            {u.isVerified ? 'Revoke' : 'Approve'}
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteUser(u._id, u.name);
+                                                            }}
+                                                            className="text-[10px] font-bold px-2 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-smooth"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

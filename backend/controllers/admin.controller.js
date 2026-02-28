@@ -1,5 +1,6 @@
 const User = require('../models/user.model');
 const AlumniProfile = require('../models/alumniProfile.model');
+const StudentProfile = require('../models/studentProfile.model');
 const Job = require('../models/job.model');
 const Event = require('../models/event.model');
 const Notification = require('../models/notification.model');
@@ -218,6 +219,36 @@ exports.exportUsers = async (req, res) => {
     }
 };
 
+// @desc    Export Students to CSV
+// @route   GET /api/admin/export-students
+// @access  Private/Admin
+exports.exportStudents = async (req, res) => {
+    try {
+        const StudentProfile = require('../models/studentProfile.model');
+        const users = await User.find({ role: 'student' }).select('name email isVerified createdAt');
+        const profiles = await StudentProfile.find();
+
+        let csv = 'Name,Email,Branch,Year,Career Interest,Skills,LinkedIn,GitHub,Verified,Joined Date\n';
+        users.forEach(user => {
+            const profile = profiles.find(p => p.user.toString() === user._id.toString());
+            const branch = profile?.branch || 'Not Set';
+            const year = profile?.year || 'N/A';
+            const interest = profile?.careerInterest || '';
+            const skills = (profile?.skills || []).join('; ');
+            const linkedin = profile?.linkedin || '';
+            const github = profile?.github || '';
+            // Wrap fields with commas in quotes
+            csv += `"${user.name}","${user.email}","${branch}","${year}","${interest}","${skills}","${linkedin}","${github}",${user.isVerified},"${new Date(user.createdAt).toLocaleDateString()}"\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=students.csv');
+        res.status(200).send(csv);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // @desc    Post Global Announcement
 // @route   POST /api/admin/announcement
 // @access  Private/Admin
@@ -290,6 +321,74 @@ exports.getAllJobs = async (req, res) => {
         const jobs = await Job.find().populate('postedBy', 'name email').sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: jobs.length, data: jobs });
     } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Delete User
+// @route   DELETE /api/admin/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Prevent admin from deleting themselves
+        if (user._id.toString() === req.user.id.toString()) {
+            return res.status(400).json({ success: false, message: 'You cannot delete your own admin account' });
+        }
+
+        // Delete associated profiles
+        if (user.role === 'alumni') {
+            await AlumniProfile.findOneAndDelete({ user: user._id });
+        } else if (user.role === 'student') {
+            await StudentProfile.findOneAndDelete({ user: user._id });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ success: true, message: 'User and associated profiles deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Update User/Alumni Status (Approve/Revoke)
+// @route   PUT /api/admin/users/status/:id
+// @access  Private/Admin
+exports.updateUserStatus = async (req, res) => {
+    console.log('>>> HIT: updateUserStatus for ID:', req.params.id);
+    try {
+        const { status, isVerified } = req.body;
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Update User verification status using findByIdAndUpdate to bypass hooks
+        if (typeof isVerified === 'boolean') {
+            await User.findByIdAndUpdate(req.params.id, { isVerified }, { new: true });
+        }
+
+        // If it's an alumni, update their profile status too
+        if (user.role === 'alumni') {
+            const profile = await AlumniProfile.findOne({ user: user._id });
+            if (profile && status) {
+                await AlumniProfile.findByIdAndUpdate(profile._id, { verificationStatus: status }, { new: true });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `User status updated to ${isVerified ? 'Verified' : 'Unverified'}`,
+            data: { id: req.params.id, isVerified }
+        });
+    } catch (err) {
+        console.error('Update User Status Error:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
