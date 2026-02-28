@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { LogOut, User, Bell, Menu, X, Settings, ChevronDown } from 'lucide-react';
 import { notificationService } from '../services/api.service';
 import SettingsModal from './SettingsModal';
+import NotificationModal from './NotificationModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ const Navbar = () => {
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = React.useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
     const [userProfilePhoto, setUserProfilePhoto] = React.useState(null);
+    const [selectedNotification, setSelectedNotification] = React.useState(null);
 
     React.useEffect(() => {
         if (user) {
@@ -127,8 +129,8 @@ const Navbar = () => {
                                                 <div className="p-8 text-center text-gray-400 text-sm">No new notifications</div>
                                             ) : (
                                                 notifications.map((n, i) => (
-                                                    <div key={i} className={`p-4 border-b border-gray-100 last:border-0 hover:bg-[var(--background)] transition-smooth cursor-pointer ${!n.isRead ? 'bg-blue-50/30' : ''}`}>
-                                                        <p className="text-sm text-gray-800">{n.message}</p>
+                                                    <div key={i} className={`p-4 border-b border-gray-100 last:border-0 hover:bg-[var(--background)] transition-smooth cursor-pointer ${!n.isRead ? 'bg-blue-50/30' : ''}`} onClick={() => { setSelectedNotification(n); setShowNotifications(false); }}>
+                                                        <p className="text-sm text-gray-800 line-clamp-3">{n.message}</p>
                                                         <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">
                                                             {new Date(n.createdAt).toLocaleDateString()}
                                                         </p>
@@ -228,6 +230,11 @@ const Navbar = () => {
             )}
 
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+            <NotificationModal
+                isOpen={!!selectedNotification}
+                onClose={() => setSelectedNotification(null)}
+                notification={selectedNotification}
+            />
         </nav>
     );
 };

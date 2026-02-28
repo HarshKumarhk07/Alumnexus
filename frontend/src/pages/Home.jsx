@@ -5,7 +5,7 @@ import ImageSlider from '../components/ImageSlider';
 const Home = () => {
     return (
         <div className="space-y-20 py-8">
-            <section className="w-full">
+            <section className="w-[100vw] relative left-[50%] right-[50%] -ml-[50vw] -mr-[50vw] px-4 md:px-8 mb-8">
                 <ImageSlider />
             </section>
 

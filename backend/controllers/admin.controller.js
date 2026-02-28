@@ -254,7 +254,7 @@ exports.exportStudents = async (req, res) => {
 // @access  Private/Admin
 exports.postAnnouncement = async (req, res) => {
     try {
-        const { message, targetRole, targetUsers } = req.body; // targetRole: 'all', 'student', 'alumni', 'specific'
+        const { title, message, targetRole, targetUsers, specificUser } = req.body; // targetRole: 'all', 'student', 'alumni', 'specific'
 
         let userQuery = {};
         if (targetRole === 'specific') {
@@ -264,6 +264,10 @@ exports.postAnnouncement = async (req, res) => {
             userQuery._id = { $in: targetUsers };
         } else if (targetRole !== 'all') {
             userQuery.role = targetRole;
+            // Handle if a specific user within that role was provided
+            if (specificUser) {
+                userQuery._id = specificUser;
+            }
         }
 
         const users = await User.find(userQuery);

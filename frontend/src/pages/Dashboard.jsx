@@ -12,6 +12,7 @@ import { adminService, notificationService, jobService, blogService, profileServ
 import toast from 'react-hot-toast';
 import ImageSlider from '../components/ImageSlider';
 import CommentModal from '../components/CommentModal';
+import NotificationModal from '../components/NotificationModal';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -22,6 +23,7 @@ const Dashboard = () => {
     const [activeBlogForComments, setActiveBlogForComments] = useState(null);
     const [requests, setRequests] = useState([]);
     const [isUpdatingRequest, setIsUpdatingRequest] = useState(null);
+    const [selectedNotification, setSelectedNotification] = useState(null);
 
     // Admin Announcement State
     const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
@@ -42,8 +44,9 @@ const Dashboard = () => {
 
     // Admin Event Invitation State
     const [showEventModal, setShowEventModal] = useState(false);
-    const [eventData, setEventData] = useState({ selectedEventId: '', targetRole: 'all', isReminder: false });
+    const [eventData, setEventData] = useState({ selectedEventId: '', targetRole: 'all', specificUser: '', isReminder: false });
     const [existingEvents, setExistingEvents] = useState([]);
+    const [existingAlumni, setExistingAlumni] = useState([]);
     const [isLoadingEvents, setIsLoadingEvents] = useState(false);
     const [isSendingEvent, setIsSendingEvent] = useState(false);
 
@@ -67,21 +70,32 @@ const Dashboard = () => {
     }, [user]);
 
     useEffect(() => {
-        const fetchEvents = async () => {
-            if (showEventModal && existingEvents.length === 0) {
-                setIsLoadingEvents(true);
-                try {
-                    const res = await eventService.getEvents();
-                    setExistingEvents(res.data.data || []);
-                } catch (error) {
-                    toast.error('Failed to load events');
-                } finally {
-                    setIsLoadingEvents(false);
+        const fetchEventsAndAlumni = async () => {
+            if (showEventModal) {
+                if (existingEvents.length === 0) {
+                    setIsLoadingEvents(true);
+                    try {
+                        const res = await eventService.getEvents();
+                        setExistingEvents(res.data.data || []);
+                    } catch (error) {
+                        toast.error('Failed to load events');
+                    } finally {
+                        setIsLoadingEvents(false);
+                    }
+                }
+
+                if (existingAlumni.length === 0) {
+                    try {
+                        const res = await profileService.getAlumni();
+                        setExistingAlumni(res.data.data || []);
+                    } catch (error) {
+                        console.error('Failed to load alumni profiles', error);
+                    }
                 }
             }
         };
-        fetchEvents();
-    }, [showEventModal]);
+        fetchEventsAndAlumni();
+    }, [showEventModal, existingEvents.length, existingAlumni.length]);
 
     const fetchDashboardData = async () => {
         try {
@@ -214,26 +228,26 @@ const Dashboard = () => {
     const handleSendEvent = async (e) => {
         e.preventDefault();
         setIsSendingEvent(true);
+        if (!eventData.selectedEventId) return toast.error('Please select an event');
         try {
-            const prefix = eventData.isReminder ? '🔔 EVENT REMINDER' : '🎉 EVENT INVITATION';
-            const selected = existingEvents.find(ev => ev._id === eventData.selectedEventId);
-            if (!selected) { toast.error('Please select an event'); setIsSendingEvent(false); return; }
-            const dateStr = selected.dateTime
-                ? new Date(selected.dateTime).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' })
-                : '';
-            const venue = selected.meetingType === 'online'
-                ? `Online${selected.meetingLink ? ' — ' + selected.meetingLink : ''}`
-                : (selected.location || '');
-            const msg = [
-                `${prefix}: ${selected.title}`,
-                selected.description && `\n${selected.description}`,
-                venue && `\n📍 ${venue}`,
-                dateStr && `\n🕐 When: ${dateStr}`
-            ].filter(Boolean).join('');
-            await adminService.postAnnouncement({ message: msg, targetRole: eventData.targetRole });
-            toast.success(`Event ${eventData.isReminder ? 'reminder' : 'invitation'} sent!`);
+            setIsSendingEvent(true);
+            const ev = existingEvents.find(e => e._id === eventData.selectedEventId);
+            const title = eventData.isReminder ? `REMINDER: ${ev.title}` : `INVITATION: ${ev.title}`;
+            let message = `You are invited to ${ev.title}!`;
+            if (ev.dateTime) message += `\nDate: ${new Date(ev.dateTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}`;
+            if (ev.location) message += `\nLocation: ${ev.location}`;
+            if (ev.speakerName) message += `\nSpeaker: ${ev.speakerName}`;
+
+            await adminService.postAnnouncement({
+                title,
+                message,
+                targetRole: eventData.targetRole,
+                specificUser: eventData.targetRole === 'alumni' ? eventData.specificUser : undefined
+            });
+
+            toast.success(eventData.isReminder ? 'Reminder sent!' : 'Invitation sent!');
             setShowEventModal(false);
-            setEventData({ selectedEventId: '', targetRole: 'all', isReminder: false });
+            setEventData({ selectedEventId: '', targetRole: 'all', specificUser: '', isReminder: false });
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to send event notification');
         } finally {
@@ -369,7 +383,7 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-10 animate-fade-in mb-20">
-            <section className="w-full">
+            <section className="w-[100vw] relative left-[50%] right-[50%] -ml-[50vw] -mr-[50vw] px-4 md:px-8 mb-8">
                 <ImageSlider />
             </section>
 
@@ -676,8 +690,8 @@ const Dashboard = () => {
                         </h3>
                         <div className="space-y-4">
                             {notifications.slice(0, 5).map((note, i) => (
-                                <div key={i} className="flex gap-4 p-3 hover:bg-[var(--background)] rounded-xl transition-smooth group cursor-pointer">
-                                    <div className={`w-2 h-2 mt-2 rounded-full transition-smooth ${!note.isRead ? 'bg-[var(--primary)] scale-125' : 'bg-gray-300'}`}></div>
+                                <div key={i} onClick={() => setSelectedNotification(note)} className="flex gap-4 p-3 hover:bg-[var(--background)] rounded-xl transition-smooth group cursor-pointer">
+                                    <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 transition-smooth ${!note.isRead ? 'bg-[var(--primary)] scale-125 shadow-[0_0_8px_var(--primary)]' : 'bg-gray-300'}`}></div>
                                     <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{note.message}</p>
                                 </div>
                             ))}
@@ -1005,12 +1019,30 @@ const Dashboard = () => {
                                 <div className="grid grid-cols-3 gap-3">
                                     {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
                                         <button key={value} type="button"
-                                            onClick={() => setEventData({ ...eventData, targetRole: value })}
+                                            onClick={() => setEventData({ ...eventData, targetRole: value, specificUser: '' })}
                                             className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${eventData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
                                         >{label}</button>
                                     ))}
                                 </div>
                             </div>
+                            {/* Individual Alumni Dropdown */}
+                            {eventData.targetRole === 'alumni' && (
+                                <div className="space-y-2 animate-fade-in">
+                                    <label className="text-sm font-bold text-gray-700">Select Specific Alumni (Optional)</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] text-sm font-medium"
+                                        value={eventData.specificUser}
+                                        onChange={(e) => setEventData({ ...eventData, specificUser: e.target.value })}
+                                    >
+                                        <option value="">All Alumni</option>
+                                        {existingAlumni.map(alum => (
+                                            <option key={alum.user._id} value={alum.user._id}>
+                                                {alum.user.name} ({alum.user.email})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             <button disabled={isSendingEvent} type="submit"
                                 className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingEvent ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
                                 {isSendingEvent ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><CalendarDays size={20} /> Send {eventData.isReminder ? 'Reminder' : 'Invitation'}</>}
@@ -1174,6 +1206,11 @@ const Dashboard = () => {
                     setActiveBlogForComments(res.data.data);
                     await fetchDashboardData();
                 }}
+            />
+            <NotificationModal
+                isOpen={!!selectedNotification}
+                onClose={() => setSelectedNotification(null)}
+                notification={selectedNotification}
             />
         </div >
     );
