@@ -189,3 +189,42 @@ exports.deleteQuery = async (req, res) => {
         res.status(400).json({ success: false, message: err.message });
     }
 };
+
+// @desc    Delete reply from query
+// @route   DELETE /api/queries/:id/reply/:replyId
+// @access  Private (Reply owner, Admin)
+exports.deleteReply = async (req, res) => {
+    try {
+        const query = await Query.findById(req.params.id);
+
+        if (!query) {
+            return res.status(404).json({ success: false, message: 'Query not found' });
+        }
+
+        const replyIndex = query.replies.findIndex(r => r._id.toString() === req.params.replyId);
+
+        if (replyIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Reply not found' });
+        }
+
+        // Check ownership or admin
+        const reply = query.replies[replyIndex];
+        if (reply.user.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this reply' });
+        }
+
+        query.replies.splice(replyIndex, 1);
+        await query.save();
+
+        const updatedQuery = await Query.findById(req.params.id)
+            .populate('student', 'name email role')
+            .populate('replies.user', 'name email role');
+
+        res.status(200).json({
+            success: true,
+            data: updatedQuery
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};

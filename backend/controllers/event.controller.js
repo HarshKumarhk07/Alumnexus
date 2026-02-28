@@ -86,6 +86,11 @@ exports.deleteEvent = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
 
+        // Check for ownership/authorization
+        if (event.speaker && event.speaker.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Not authorized to delete this event' });
+        }
+
         await event.deleteOne();
 
         res.status(200).json({ success: true, message: 'Event deleted successfully' });
@@ -103,6 +108,11 @@ exports.updateEvent = async (req, res) => {
         let event = await Event.findById(req.params.id);
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        // Check for ownership/authorization
+        if (event.speaker && event.speaker.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Not authorized to update this event' });
         }
 
         const { title, dateTime, endTime, description, meetingType, meetingLink, location, speakerName } = req.body;

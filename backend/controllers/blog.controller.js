@@ -148,3 +148,25 @@ exports.deleteComment = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+// @desc    Delete Blog
+// @route   DELETE /api/blogs/:id
+// @access  Private (Author/Admin)
+exports.deleteBlog = async (req, res) => {
+    try {
+        const blog = await Blog.findById(req.params.id);
+
+        if (!blog) {
+            return res.status(404).json({ success: false, message: 'Blog not found' });
+        }
+
+        // Check if user is author or admin
+        if (blog.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Not authorized to delete this blog' });
+        }
+
+        await blog.deleteOne();
+        res.status(200).json({ success: true, message: 'Blog removed' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

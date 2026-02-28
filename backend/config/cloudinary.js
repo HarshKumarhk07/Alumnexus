@@ -23,9 +23,13 @@ const upload = multer({ storage: storage });
 // Configure Storage Engine for Resumes
 const documentStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: 'alumnexus/resumes', // Folder name in Cloudinary
-        resource_type: 'raw' // Required for raw documents like PDF out of the image pipeline
+    params: async (req, file) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        return {
+            folder: 'alumnexus/resumes',
+            format: 'pdf', // Explicitly tell Cloudinary this is a PDF
+            public_id: `resume-${uniqueSuffix}`
+        };
     }
 });
 

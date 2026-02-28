@@ -38,7 +38,8 @@ const alumniProfileSchema = new mongoose.Schema({
     projects: [{
         title: String,
         description: String,
-        link: String
+        githubLink: String,
+        liveLink: String
     }],
     mentorshipAvailable: {
         type: Boolean,

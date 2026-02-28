@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { jobService, adminService } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
-import { Briefcase, MapPin, DollarSign, Calendar, Search, Filter, Plus, X, ArrowUpRight } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, Calendar, Search, Filter, Plus, X, ArrowUpRight, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Jobs = () => {
@@ -19,15 +19,19 @@ const Jobs = () => {
     const [selectedJobId, setSelectedJobId] = useState(null);
     const [applying, setApplying] = useState({});
     const [viewMode, setViewMode] = useState('all'); // 'all' or 'my'
+    const [showResumePreview, setShowResumePreview] = useState(false);
+    const [selectedResumeUrl, setSelectedResumeUrl] = useState('');
 
     const hasApplied = (job) => {
         if (!user || user.role !== 'student') return false;
         return job.applicants?.some(a => String(a.user?._id || a.user) === String(user._id || user.id));
     };
 
-    useEffect(() => {
-        fetchJobs();
-    }, []);
+    const getResumePreviewUrl = (url) => {
+        if (!url) return '';
+        if (url.match(/\.(jpg|jpeg|png|webp)$/i)) return url;
+        return url.replace(/\.pdf$/i, '.jpg');
+    };
 
     const fetchJobs = async () => {
         try {
@@ -50,7 +54,7 @@ const Jobs = () => {
 
     useEffect(() => {
         fetchJobs();
-    }, [viewMode]);
+    }, [viewMode, user.role]);
 
 
     const handlePostJob = async (e) => {
@@ -264,6 +268,13 @@ const Jobs = () => {
                                                 {applying[job._id] ? '...' : 'Deregister'}
                                             </button>
                                         </div>
+                                    ) : job.isActive === false ? (
+                                        <button
+                                            disabled
+                                            className="w-full py-3 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200"
+                                        >
+                                            Drive Closed
+                                        </button>
                                     ) : (
                                         <button
                                             onClick={() => handleApply(job._id)}
@@ -401,28 +412,69 @@ const Jobs = () => {
                                 <p className="text-center py-10 text-gray-500">No applicants yet.</p>
                             ) : (
                                 applicants.map((applicant, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--background)] rounded-2xl border border-[var(--border)]">
-                                        <div>
-                                            <h4 className="font-bold">{applicant.user.name}</h4>
-                                            <p className="text-sm text-gray-500">{applicant.user.email}</p>
-                                            <p className="text-[10px] text-gray-400 mt-1">Applied: {new Date(applicant.appliedAt).toLocaleDateString()}</p>
+                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--background)] rounded-2xl border border-[var(--border)] hover:bg-[var(--surface)] transition-smooth">
+                                        <div className="space-y-1">
+                                            <h4 className="font-bold text-lg">{applicant.user.name}</h4>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-gray-500">
+                                                <span className="text-[var(--primary)]">{applicant.user.email}</span>
+                                                {applicant.branch && <span>• {applicant.branch}</span>}
+                                                {applicant.year && <span>• {applicant.year} Year</span>}
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">Applied on {new Date(applicant.appliedAt).toLocaleDateString()}</p>
                                         </div>
                                         <div className="flex gap-2">
                                             {applicant.resumeURL ? (
-                                                <a
-                                                    href={applicant.resumeURL}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="px-4 py-2 bg-[var(--primary-light)] text-white text-sm font-bold rounded-lg hover:bg-[var(--primary)] transition-smooth"
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedResumeUrl(applicant.resumeURL);
+                                                        setShowResumePreview(true);
+                                                    }}
+                                                    className="px-5 py-2.5 bg-[var(--primary)] text-white text-sm font-bold rounded-xl hover:bg-[var(--primary-light)] transition-smooth premium-shadow"
                                                 >
                                                     Preview Resume
-                                                </a>
+                                                </button>
                                             ) : (
                                                 <span className="text-xs text-gray-400 italic">No resume uploaded</span>
                                             )}
                                         </div>
                                     </div>
                                 ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Premium Resume Preview Modal */}
+            {showResumePreview && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col premium-shadow relative">
+                        <div className="p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center sticky top-0 z-10">
+                            <h3 className="text-xl font-bold text-[var(--primary)]">Resume Preview</h3>
+                            <button
+                                onClick={() => setShowResumePreview(false)}
+                                className="p-2 hover:bg-white rounded-xl transition-smooth text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto p-4 md:p-8 bg-gray-100/50 flex flex-col items-center">
+                            {selectedResumeUrl ? (
+                                <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 min-h-[600px] flex items-center justify-center relative group">
+                                    <img
+                                        src={getResumePreviewUrl(selectedResumeUrl)}
+                                        alt="Resume Preview"
+                                        className="w-full h-auto object-contain"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = 'https://via.placeholder.com/800x1100?text=Preview+Generation+Failed';
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="py-20 text-center">
+                                    <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                                    <p className="text-gray-500 font-medium">No resume available for preview</p>
+                                </div>
                             )}
                         </div>
                     </div>

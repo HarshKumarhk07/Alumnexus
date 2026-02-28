@@ -6,7 +6,9 @@ const StudentProfile = require('../models/studentProfile.model');
 // @access  Public
 exports.getJobs = async (req, res) => {
     try {
-        const jobs = await Job.find({ isActive: true }).populate('postedBy', 'name');
+        const jobs = await Job.find()
+            .populate('postedBy', 'name')
+            .sort({ isActive: -1, createdAt: -1 });
         res.status(200).json({ success: true, count: jobs.length, data: jobs });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
@@ -201,12 +203,16 @@ exports.getJobApplicants = async (req, res) => {
                     return {
                         user: user,
                         resumeURL: null,
+                        branch: 'N/A',
+                        year: 'N/A',
                         appliedAt: applicant.appliedAt
                     };
                 }
                 return {
                     user: student.user,
                     resumeURL: student.resumeURL,
+                    branch: student.branch,
+                    year: student.year,
                     appliedAt: applicant.appliedAt
                 };
             })

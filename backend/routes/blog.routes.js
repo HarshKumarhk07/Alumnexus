@@ -5,7 +5,8 @@ const {
     createBlog,
     likeBlog,
     addComment,
-    deleteComment
+    deleteComment,
+    deleteBlog
 } = require('../controllers/blog.controller');
 const { protect, authorize, requireVerified } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
@@ -15,5 +16,6 @@ router.post('/', protect, authorize('alumni', 'admin'), requireVerified, upload.
 router.put('/like/:id', protect, likeBlog);
 router.post('/:id/comment', protect, addComment);
 router.delete('/:id/comment/:commentId', protect, deleteComment);
+router.delete('/:id', protect, deleteBlog);
 
 module.exports = router;

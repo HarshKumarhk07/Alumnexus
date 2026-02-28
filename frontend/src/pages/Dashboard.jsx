@@ -3,14 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import {
     Users, Briefcase, BookOpen, Bell, TrendingUp,
     ArrowUpRight, Clock, Star, Target, ShieldCheck,
-    FileText, Mail, Download, CheckCircle2, XCircle, X
+    FileText, Mail, Download, CheckCircle2, XCircle, X,
+    Heart, MessageSquare, Image as ImageIcon, Handshake, MessageCircle, UserCheck, Loader2, GraduationCap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { adminService, notificationService, jobService, blogService } from '../services/api.service';
+import { adminService, notificationService, jobService, blogService, profileService } from '../services/api.service';
 import toast from 'react-hot-toast';
 import ImageSlider from '../components/ImageSlider';
 import CommentModal from '../components/CommentModal';
-import { Heart, MessageSquare, Image as ImageIcon } from 'lucide-react';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -19,6 +19,8 @@ const Dashboard = () => {
     const [recentJobs, setRecentJobs] = useState([]);
     const [recentBlogs, setRecentBlogs] = useState([]);
     const [activeBlogForComments, setActiveBlogForComments] = useState(null);
+    const [requests, setRequests] = useState([]);
+    const [isUpdatingRequest, setIsUpdatingRequest] = useState(null);
 
     // Admin Announcement State
     const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
@@ -43,30 +45,36 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
+            const [notifyRes, statsRes, blogsRes] = await Promise.all([
+                notificationService.getNotifications(),
+                adminService.getPublicStats(),
+                blogService.getBlogs()
+            ]);
+            setNotifications(notifyRes.data.data);
+            setStats(statsRes.data.data);
+            setRecentBlogs(blogsRes.data.data.slice(0, 3));
+
             if (user.role === 'admin') {
-                const [statsRes, pendingRes, notifyRes, jobsRes, blogsRes] = await Promise.all([
-                    adminService.getStats(),
+                const [pendingRes, jobsRes] = await Promise.all([
                     adminService.getPendingAlumni(),
-                    notificationService.getNotifications(),
-                    adminService.getAllJobs(),
-                    blogService.getBlogs()
+                    adminService.getAllJobs()
                 ]);
-                setStats(statsRes.data.data);
                 setPendingAlumni(pendingRes.data.data);
-                setNotifications(notifyRes.data.data);
                 setRecentJobs(jobsRes.data.data.slice(0, 3));
-                setRecentBlogs(blogsRes.data.data.slice(0, 3));
-            } else {
-                const [jobRes, notifyRes, statsRes, blogsRes] = await Promise.all([
+            } else if (user.role === 'alumni') {
+                const [jobRes, reqRes] = await Promise.all([
                     jobService.getJobs(),
-                    notificationService.getNotifications(),
-                    adminService.getPublicStats(),
-                    blogService.getBlogs()
+                    profileService.getReceivedRequests()
                 ]);
                 setRecentJobs(jobRes.data.data.slice(0, 3));
-                setNotifications(notifyRes.data.data);
-                setStats(statsRes.data.data);
-                setRecentBlogs(blogsRes.data.data.slice(0, 3));
+                setRequests(reqRes.data.data);
+            } else if (user.role === 'student') {
+                const [jobRes, reqRes] = await Promise.all([
+                    jobService.getJobs(),
+                    profileService.getSentRequests()
+                ]);
+                setRecentJobs(jobRes.data.data.slice(0, 3));
+                setRequests(reqRes.data.data);
             }
         } catch (err) {
             toast.error('Failed to load dashboard data');
@@ -165,6 +173,19 @@ const Dashboard = () => {
         }
     }, [announcement.targetRole]);
 
+    const handleUpdateRequestStatus = async (requestId, status, responseText) => {
+        try {
+            setIsUpdatingRequest(requestId);
+            await profileService.updateRequestStatus(requestId, { status, response: responseText });
+            toast.success(`Request ${status} successfully`);
+            fetchDashboardData();
+        } catch (err) {
+            toast.error('Failed to update request');
+        } finally {
+            setIsUpdatingRequest(null);
+        }
+    };
+
     if (loading) return <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div></div>;
 
     return (
@@ -203,10 +224,10 @@ const Dashboard = () => {
                     </>
                 ) : (
                     <>
-                        <StatCard label="Network Size" value={stats?.networkSize || '0'} icon={Users} to="/directory" />
+                        <StatCard label="Alumni Network" value={stats?.alumniCount || '0'} icon={Users} to="/directory" />
+                        <StatCard label="Student Members" value={stats?.studentCount || '0'} icon={GraduationCap} to={user.role === 'alumni' ? "/students" : "/dashboard"} />
                         <StatCard label="Active Jobs" value={stats?.activeJobs || 0} icon={Briefcase} to="/jobs" />
                         <StatCard label="Mentors Available" value={stats?.mentors || 0} icon={Star} to="/directory" />
-                        <StatCard label="Insights Shared" value={stats?.insights || 0} icon={TrendingUp} to="/blogs" />
                     </>
                 )}
             </div>
@@ -347,6 +368,54 @@ const Dashboard = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* Requests Section */}
+                    {user.role !== 'admin' && (
+                        <div className="space-y-6 pt-10">
+                            <div className="flex justify-between items-center px-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-[var(--surface)] text-[var(--primary)] rounded-lg">
+                                        <Handshake size={24} />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-[var(--primary)]">Mentorship & Referrals</h2>
+                                </div>
+                                <span className="bg-white/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-[var(--primary)] border">
+                                    {requests.length} Total
+                                </span>
+                            </div>
+
+                            {requests.length === 0 ? (
+                                <div className="p-16 text-center glass-card border-2 border-dashed border-[var(--border)] rounded-[32px] animate-fade-in">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-300">
+                                        <Clock size={32} />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-500 mb-2">No active requests</h3>
+                                    <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                                        {user.role === 'student'
+                                            ? "Request mentorship or referral from our distinguished alumni to boost your career."
+                                            : "Students who reach out to you for guidance or referrals will appear here."}
+                                    </p>
+                                    {user.role === 'student' && (
+                                        <Link to="/directory" className="inline-block mt-6 px-6 py-3 bg-[var(--primary)] text-white font-bold rounded-xl hover:bg-[var(--primary-light)] transition-smooth">
+                                            Find Alumni
+                                        </Link>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {requests.map((req) => (
+                                        <RequestCard
+                                            key={req._id}
+                                            request={req}
+                                            role={user.role}
+                                            isUpdating={isUpdatingRequest === req._id}
+                                            onStatusUpdate={handleUpdateRequestStatus}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar Widgets */}
@@ -562,6 +631,174 @@ const StatCard = ({ label, value, icon: Icon, trend, color, to, onClick }) => {
             <h3 className="text-2xl md:text-3xl font-bold text-[var(--primary)]">{value}</h3>
             <p className="text-gray-500 text-xs md:text-sm font-medium">{label}</p>
         </Component>
+    );
+};
+
+const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
+    const isSent = role === 'student';
+    const otherUser = isSent ? request.receiver : request.sender;
+    const [response, setResponse] = useState('');
+    const [tempStatus, setTempStatus] = useState(request.status);
+    const [showResponseInput, setShowResponseInput] = useState(false);
+
+    useEffect(() => {
+        if (showResponseInput) {
+            setResponse(request.response || '');
+            setTempStatus(request.status);
+        }
+    }, [showResponseInput, request.response, request.status]);
+
+    const typeIcons = {
+        mentorship: MessageCircle,
+        'resume-review': FileText,
+        referral: UserCheck
+    };
+
+    const StatusIcon = typeIcons[request.type] || MessageCircle;
+
+    const statusColors = {
+        pending: 'text-yellow-600 bg-yellow-50 border-yellow-100',
+        accepted: 'text-green-600 bg-green-50 border-green-100',
+        rejected: 'text-red-600 bg-red-50 border-red-100'
+    };
+
+    return (
+        <div className="glass-card p-6 border border-[var(--border)] premium-shadow hover:scale-[1.01] transition-smooth group animate-fade-in text-left">
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-4 items-center">
+                    <div className="p-3 bg-[var(--surface)] text-[var(--primary)] rounded-xl group-hover:bg-white transition-smooth">
+                        <StatusIcon size={24} />
+                    </div>
+                    <div className="overflow-hidden text-left">
+                        <h4 className="font-bold text-[var(--primary)] capitalize truncate">{request.type.replace('-', ' ')}</h4>
+                        <p className="text-xs text-gray-500 font-medium truncate">
+                            {isSent ? 'To' : 'From'}: <span className="text-[var(--primary)]">{otherUser?.name || 'Unknown'}</span>
+                        </p>
+                    </div>
+                </div>
+                <span className={`text-[10px] font-bold px-3 py-1 rounded-full border uppercase tracking-wider shrink-0 ${statusColors[request.status]}`}>
+                    {request.status}
+                </span>
+            </div>
+
+            <div className="mb-4 p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm italic text-gray-600">"{request.message}"</p>
+            </div>
+
+            {request.response && (
+                <div className="mb-4 p-4 bg-[var(--accent)]/30 rounded-xl border border-[var(--border)] relative group/resp">
+                    <p className="text-[10px] font-bold text-[var(--primary)] uppercase mb-1">Response:</p>
+                    {!showResponseInput ? (
+                        <>
+                            <p className="text-sm text-gray-700">{request.response}</p>
+                            {!isSent && (
+                                <button
+                                    onClick={() => setShowResponseInput(true)}
+                                    className="absolute top-2 right-2 p-1.5 bg-white border border-gray-200 rounded-lg text-gray-400 opacity-0 group-hover/resp:opacity-100 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-smooth"
+                                    title="Edit Response"
+                                >
+                                    <MessageSquare size={14} />
+                                </button>
+                            )}
+                        </>
+                    ) : (
+                        <div className="space-y-3 pt-2">
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setTempStatus('accepted')}
+                                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-smooth ${tempStatus === 'accepted' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-600'}`}
+                                >
+                                    Accept
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTempStatus('rejected')}
+                                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-smooth ${tempStatus === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600'}`}
+                                >
+                                    Reject
+                                </button>
+                            </div>
+                            <textarea
+                                value={response}
+                                onChange={(e) => setResponse(e.target.value)}
+                                placeholder="Update your response..."
+                                className="w-full p-3 text-sm border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[var(--primary)] bg-white"
+                                rows="2"
+                                autoFocus
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    disabled={isUpdating}
+                                    onClick={() => {
+                                        onStatusUpdate(request._id, tempStatus, response);
+                                        setShowResponseInput(false);
+                                    }}
+                                    className="flex-1 py-2 bg-[var(--primary)] text-white rounded-lg text-sm font-bold hover:bg-[var(--primary-light)] transition-smooth disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Update
+                                </button>
+                                <button
+                                    onClick={() => setShowResponseInput(false)}
+                                    className="px-4 py-2 border rounded-lg text-sm font-bold hover:bg-gray-50 transition-smooth"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {!isSent && request.status === 'pending' && !showResponseInput && (
+                <div className="space-y-4">
+                    <button
+                        onClick={() => setShowResponseInput(true)}
+                        className="w-full py-3 bg-[var(--primary)] text-white rounded-xl font-bold text-sm hover:bg-[var(--primary-light)] transition-smooth"
+                    >
+                        Review & Respond
+                    </button>
+                </div>
+            )}
+
+            {!isSent && request.status === 'pending' && showResponseInput && !request.response && (
+                <div className="space-y-4 animate-fade-in text-left">
+                    <textarea
+                        value={response}
+                        onChange={(e) => setResponse(e.target.value)}
+                        placeholder="Add a short response (optional)..."
+                        className="w-full p-3 text-sm border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[var(--primary)]"
+                        rows="2"
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            disabled={isUpdating}
+                            onClick={() => onStatusUpdate(request._id, 'accepted', response)}
+                            className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-smooth disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Accept
+                        </button>
+                        <button
+                            disabled={isUpdating}
+                            onClick={() => onStatusUpdate(request._id, 'rejected', response)}
+                            className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-smooth disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />} Reject
+                        </button>
+                        <button
+                            onClick={() => setShowResponseInput(false)}
+                            className="px-4 py-2 border rounded-lg text-sm font-bold hover:bg-gray-50 transition-smooth"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <p className="text-[10px] text-gray-400 font-medium text-right mt-4">
+                Requested on {new Date(request.createdAt).toLocaleDateString()}
+            </p>
+        </div>
     );
 };
 

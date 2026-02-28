@@ -64,7 +64,12 @@ export const profileService = {
     getMeAlumniProfile: () => API.get('/profiles/alumni/me'),
     getMeStudentProfile: () => API.get('/profiles/student/me'),
     upsertStudentProfile: (data) => API.post('/profiles/student', data),
-    uploadStudentPhoto: (data) => API.post('/profiles/student/photo', data)
+    uploadStudentPhoto: (data) => API.post('/profiles/student/photo', data),
+    createRequest: (data) => API.post('/profiles/requests', data),
+    getSentRequests: () => API.get('/profiles/requests/sent'),
+    getReceivedRequests: () => API.get('/profiles/requests/received'),
+    updateRequestStatus: (id, data) => API.put(`/profiles/requests/${id}`, data),
+    getStudents: () => API.get('/profiles/students')
 };
 
 export const jobService = {
@@ -84,7 +89,8 @@ export const blogService = {
     createBlog: (data) => API.post('/blogs', data),
     likeBlog: (id) => API.put(`/blogs/like/${id}`),
     addComment: (id, text) => API.post(`/blogs/${id}/comment`, { text }),
-    deleteComment: (id, commentId) => API.delete(`/blogs/${id}/comment/${commentId}`)
+    deleteComment: (id, commentId) => API.delete(`/blogs/${id}/comment/${commentId}`),
+    deleteBlog: (id) => API.delete(`/blogs/${id}`)
 };
 
 export const eventService = {
@@ -124,5 +130,6 @@ export const queryService = {
     createQuery: (data) => API.post('/queries', data),
     replyToQuery: (id, text) => API.post(`/queries/${id}/reply`, { text }),
     resolveQuery: (id) => API.put(`/queries/${id}/resolve`),
-    deleteQuery: (id) => API.delete(`/queries/${id}`)
+    deleteQuery: (id) => API.delete(`/queries/${id}`),
+    deleteReply: (id, replyId) => API.delete(`/queries/${id}/reply/${replyId}`)
 };

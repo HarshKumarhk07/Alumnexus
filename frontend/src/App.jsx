@@ -12,6 +12,7 @@ import Blogs from './pages/Blogs';
 import Events from './pages/Events';
 import Gallery from './pages/Gallery';
 import AlumniDirectory from './pages/AlumniDirectory';
+import StudentDirectory from './pages/StudentDirectory';
 import Queries from './pages/Queries';
 
 const ProtectedRoute = ({ children, roles }) => {
@@ -47,6 +48,7 @@ const App = () => {
             </ProtectedRoute>
           } />
           <Route path="/directory" element={<ProtectedRoute><AlumniDirectory /></ProtectedRoute>} />
+          <Route path="/students" element={<ProtectedRoute roles={['alumni', 'admin']}><StudentDirectory /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
           <Route path="/blogs" element={<ProtectedRoute><Blogs /></ProtectedRoute>} />
           <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />

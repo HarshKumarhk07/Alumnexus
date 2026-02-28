@@ -113,11 +113,11 @@ const Events = () => {
                         Live webinars, technical workshops, and alumni meetups to accelerate your professional growth.
                     </p>
                 </div>
-                {user.role === 'admin' && (
+                {(user.role === 'admin' || (user.role === 'alumni' && user.isVerified)) && (
                     <button
                         onClick={() => {
                             setIsEditing(null);
-                            setNewEvent({ title: '', speakerName: '', dateTime: '', endTime: '', meetingType: 'online', meetingLink: '', location: '', description: '' });
+                            setNewEvent({ title: '', speakerName: user.role === 'alumni' ? user.name : '', dateTime: '', endTime: '', meetingType: 'online', meetingLink: '', location: '', description: '' });
                             setShowModal(true);
                         }}
                         className="px-8 py-4 bg-[var(--primary)] text-white rounded-2xl font-bold premium-shadow hover:scale-105 transition-smooth flex items-center gap-2"
@@ -173,8 +173,8 @@ const Events = () => {
 
                             return (
                                 <div key={event._id} className={`glass-card p-8 border border-[var(--border)] flex flex-col md:flex-row gap-8 hover:bg-[var(--surface)] transition-smooth group relative overflow-hidden ${isPast ? 'opacity-70' : ''}`}>
-                                    {/* Admin Action Buttons */}
-                                    {user?.role === 'admin' && (
+                                    {/* Admin/Author Action Buttons */}
+                                    {(user?.role === 'admin' || (event.speaker?._id || event.speaker) === (user?._id || user?.id)) && (
                                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-smooth z-10">
                                             <button
                                                 onClick={(e) => {

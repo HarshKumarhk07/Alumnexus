@@ -3,7 +3,7 @@ import { blogService } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
 import {
     Heart, MessageSquare, User, Calendar, Plus,
-    X, Image as ImageIcon, Search, Tag, ArrowRight, Upload
+    X, Image as ImageIcon, Search, Tag, ArrowRight, Upload, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CommentModal from '../components/CommentModal';
@@ -103,6 +103,17 @@ const Blogs = () => {
         // Wait, the activeBlogForComments state needs the fresh data to push to the modal.
     };
 
+    const handleDeleteBlog = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this blog post?')) return;
+        try {
+            await blogService.deleteBlog(id);
+            toast.success('Blog deleted successfully');
+            fetchBlogs();
+        } catch (err) {
+            toast.error('Failed to delete blog');
+        }
+    };
+
     // Re-sync active blog when blogs refresh
     useEffect(() => {
         if (activeBlogForComments) {
@@ -188,6 +199,20 @@ const Blogs = () => {
                                         {blog.category}
                                     </span>
                                 </div>
+                                {((String(blog.author?._id || blog.author) === String(user._id || user.id)) || user.role === 'admin') && (
+                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-smooth">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteBlog(blog._id);
+                                            }}
+                                            className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-xl backdrop-blur-sm shadow-lg transition-smooth"
+                                            title="Delete Blog"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="p-6 flex-1 flex flex-col text-left">

@@ -66,22 +66,27 @@ exports.getPublicStats = async (req, res) => {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
-        const networkSize = await User.countDocuments(); // All users
+        const alumniCount = await AlumniProfile.countDocuments({ verificationStatus: 'approved' });
+        const studentCount = await User.countDocuments({ role: 'student' });
         const activeJobs = await Job.countDocuments({ isActive: true });
-        const mentors = await User.countDocuments({ role: 'alumni' });
-        const insights = await Blog.countDocuments(); // Assuming Blogs are "insights"
+        const mentors = await AlumniProfile.countDocuments({
+            verificationStatus: 'approved',
+            mentorshipAvailable: true
+        });
+        const insights = await Blog.countDocuments();
 
         // Trends (Simple mock or real based on growth)
         const newUsers = await User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
         const newInsights = await Blog.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
 
-        const networkGrowth = networkSize > 0 ? ((newUsers / (networkSize - newUsers || 1)) * 100).toFixed(0) : 0;
+        const networkGrowth = alumniCount > 0 ? ((newUsers / (alumniCount || 1)) * 100).toFixed(0) : 0;
         const insightsGrowth = insights > 0 ? ((newInsights / (insights - newInsights || 1)) * 100).toFixed(0) : 0;
 
         res.status(200).json({
             success: true,
             data: {
-                networkSize: networkSize.toLocaleString(),
+                alumniCount,
+                studentCount,
                 activeJobs,
                 mentors,
                 insights,

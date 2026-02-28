@@ -1,6 +1,46 @@
 const AlumniProfile = require('../models/alumniProfile.model');
 const StudentProfile = require('../models/studentProfile.model');
 const User = require('../models/user.model');
+const Request = require('../models/request.model');
+const Notification = require('../models/notification.model');
+
+// @desc    Get all student profiles
+// @route   GET /api/profiles/students
+// @access  Private (Alumni, Admin)
+exports.getStudentProfiles = async (req, res) => {
+    try {
+        // Find all users with role 'student'
+        const users = await User.find({ role: 'student' }).select('name email');
+
+        // Find all student profiles
+        const profiles = await StudentProfile.find();
+
+        // Merge profiles into users
+        const studentData = users.map(user => {
+            const profile = profiles.find(p => p.user.toString() === user._id.toString());
+            return {
+                _id: profile ? profile._id : `temp-${user._id}`,
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email
+                },
+                branch: profile ? profile.branch : 'Not Set',
+                year: profile ? profile.year : 'N/A',
+                skills: profile ? profile.skills : [],
+                projects: profile ? profile.projects : [],
+                linkedin: profile ? profile.linkedin : '',
+                github: profile ? profile.github : '',
+                careerInterest: profile ? profile.careerInterest : '',
+                resumeURL: profile ? profile.resumeURL : ''
+            };
+        });
+
+        res.status(200).json({ success: true, count: studentData.length, data: studentData });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
 
 // @desc    Get all alumni profiles
 // @route   GET /api/profiles/alumni
@@ -187,6 +227,110 @@ exports.uploadStudentPhoto = async (req, res) => {
         }
 
         res.status(200).json({ success: true, data: profile });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Create a mentorship/referral request
+// @route   POST /api/profiles/requests
+// @access  Private (Student)
+exports.createRequest = async (req, res) => {
+    try {
+        const { receiverId, type, message } = req.body;
+
+        // Check if a pending request already exists
+        const existingRequest = await Request.findOne({
+            sender: req.user.id,
+            receiver: receiverId,
+            type,
+            status: 'pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({ success: false, message: 'You already have a pending request of this type to this alumni' });
+        }
+
+        const request = await Request.create({
+            sender: req.user.id,
+            receiver: receiverId,
+            type,
+            message
+        });
+
+        // Create notification for alumni
+        await Notification.create({
+            user: receiverId,
+            message: `New ${type} request from ${req.user.name}`,
+            type: 'info'
+        });
+
+        res.status(201).json({ success: true, data: request });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Get requests sent by me
+// @route   GET /api/profiles/requests/sent
+// @access  Private (Student)
+exports.getSentRequests = async (req, res) => {
+    try {
+        const requests = await Request.find({ sender: req.user.id })
+            .populate('receiver', 'name email')
+            .sort('-createdAt');
+        res.status(200).json({ success: true, data: requests });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Get requests received by me
+// @route   GET /api/profiles/requests/received
+// @access  Private (Alumni)
+exports.getReceivedRequests = async (req, res) => {
+    try {
+        const requests = await Request.find({ receiver: req.user.id })
+            .populate('sender', 'name email')
+            .sort('-createdAt');
+        res.status(200).json({ success: true, data: requests });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Update request status
+// @route   PUT /api/profiles/requests/:id
+// @access  Private (Alumni)
+exports.updateRequestStatus = async (req, res) => {
+    try {
+        const { status, response } = req.body;
+
+        let request = await Request.findById(req.params.id);
+
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+
+        // Make sure request belongs to user
+        if (request.receiver.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Not authorized to update this request' });
+        }
+
+        request = await Request.findByIdAndUpdate(
+            req.params.id,
+            { status, response },
+            { new: true, runValidators: true }
+        );
+
+        // Create notification for student
+        await Notification.create({
+            user: request.sender,
+            message: `Your ${request.type} request has been ${status}`,
+            type: status === 'accepted' ? 'success' : 'alert'
+        });
+
+        res.status(200).json({ success: true, data: request });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }

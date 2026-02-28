@@ -88,6 +88,9 @@ const Navbar = () => {
                         <>
                             <Link to="/dashboard" className="hover:text-[var(--primary)] transition-smooth">Dashboard</Link>
                             <Link to="/directory" className="hover:text-[var(--primary)] transition-smooth">Alumni</Link>
+                            {(user.role === 'alumni' || user.role === 'admin') && (
+                                <Link to="/students" className="hover:text-[var(--primary)] transition-smooth">Students</Link>
+                            )}
                             <Link to="/jobs" className="hover:text-[var(--primary)] transition-smooth">Jobs</Link>
                             <Link to="/blogs" className="hover:text-[var(--primary)] transition-smooth">Blogs</Link>
                             <Link to="/events" className="hover:text-[var(--primary)] transition-smooth">Events</Link>
@@ -206,6 +209,9 @@ const Navbar = () => {
                             </div>
                             <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Dashboard</Link>
                             <Link to="/directory" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Alumni</Link>
+                            {(user.role === 'alumni' || user.role === 'admin') && (
+                                <Link to="/students" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Students</Link>
+                            )}
                             <Link to="/jobs" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Jobs</Link>
                             <Link to="/blogs" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Blogs</Link>
                             <Link to="/events" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Events</Link>

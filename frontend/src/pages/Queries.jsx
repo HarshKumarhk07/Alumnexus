@@ -68,6 +68,23 @@ const Queries = () => {
         }
     };
 
+    const handleDeleteReply = async (queryId, replyId) => {
+        if (!window.confirm('Are you sure you want to delete this reply?')) return;
+        setIsSubmitting(true);
+        try {
+            const res = await queryService.deleteReply(queryId, replyId);
+            setQueries(queries.map(q => q._id === queryId ? res.data.data : q));
+            if (activeQuery?._id === queryId) {
+                setActiveQuery(res.data.data);
+            }
+            toast.success('Reply deleted!');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to delete reply');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleResolve = async (queryId) => {
         try {
             const res = await queryService.resolveQuery(queryId);
@@ -289,7 +306,18 @@ const Queries = () => {
                                                             <span className="font-bold text-[var(--primary)] text-sm">{reply.user?.name}</span>
                                                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg">{reply.user?.role}</span>
                                                         </div>
-                                                        <span className="text-xs text-gray-400 font-medium">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-gray-400 font-medium">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                                                            {(user.role === 'admin' || (reply.user?._id === user._id)) && (
+                                                                <button
+                                                                    onClick={() => handleDeleteReply(activeQuery._id, reply._id)}
+                                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-smooth"
+                                                                    title="Delete Reply"
+                                                                >
+                                                                    <X size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">{reply.text}</p>
                                                 </div>

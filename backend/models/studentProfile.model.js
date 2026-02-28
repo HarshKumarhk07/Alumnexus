@@ -18,7 +18,8 @@ const studentProfileSchema = new mongoose.Schema({
     projects: [{
         title: String,
         description: String,
-        link: String
+        githubLink: String,
+        liveLink: String
     }],
     resumeURL: {
         type: String
