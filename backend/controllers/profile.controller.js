@@ -99,6 +99,23 @@ exports.upsertAlumniProfile = async (req, res) => {
         req.body.profilePhoto = req.file.path; // Cloudinary URL automatically provided by multer-storage-cloudinary
     }
 
+    if (req.body.projects && typeof req.body.projects === 'string') {
+        try {
+            req.body.projects = JSON.parse(req.body.projects);
+        } catch (e) {
+            console.error("Failed to parse projects:", e);
+            req.body.projects = [];
+        }
+    }
+
+    if (req.body.skills && typeof req.body.skills === 'string') {
+        try {
+            req.body.skills = JSON.parse(req.body.skills);
+        } catch (e) {
+            req.body.skills = req.body.skills.split(',').map(s => s.trim()).filter(Boolean);
+        }
+    }
+
     try {
         let profile = await AlumniProfile.findOne({ user: req.user.id });
 
