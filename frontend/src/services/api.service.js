@@ -112,6 +112,13 @@ export const eventService = {
     deleteEvent: (id) => API.delete(`/events/${id}`)
 };
 
+export const surveyService = {
+    getSurveys: () => API.get('/surveys'),
+    createSurvey: (data) => API.post('/surveys', data),
+    voteSurvey: (id, optionId) => API.put(`/surveys/${id}/vote`, { optionId }),
+    deleteSurvey: (id) => API.delete(`/surveys/${id}`)
+};
+
 export const galleryService = {
     getGallery: (category) => API.get('/gallery', { params: { category } }),
     uploadMedia: (data) => API.post('/gallery', data),

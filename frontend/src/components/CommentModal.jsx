@@ -57,7 +57,7 @@ const CommentModal = ({ blog, isOpen, onClose, onCommentAdded, onCommentDeleted 
                                         <span className="font-bold text-[var(--primary)] text-sm">{comment.user?.name || 'Anonymous User'}</span>
                                         <div className="flex items-center gap-3">
                                             <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{new Date(comment.date).toLocaleDateString()}</span>
-                                            {(user?._id || user?.id) === (comment.user?._id || comment.user) && onCommentDeleted && (
+                                            {((user?._id || user?.id) === (comment.user?._id || comment.user) || user?.role === 'admin') && onCommentDeleted && (
                                                 <button
                                                     onClick={() => onCommentDeleted(blog._id, comment._id)}
                                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600"

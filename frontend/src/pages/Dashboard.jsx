@@ -5,10 +5,10 @@ import {
     ArrowUpRight, Clock, Star, Target, ShieldCheck,
     FileText, Mail, Download, CheckCircle2, XCircle, X,
     Heart, MessageSquare, Image as ImageIcon, Handshake, MessageCircle, UserCheck, Loader2, GraduationCap, Upload,
-    Newspaper, CalendarDays
+    Newspaper, CalendarDays, BarChart2, PieChart
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { adminService, notificationService, jobService, blogService, profileService, eventService } from '../services/api.service';
+import { adminService, notificationService, jobService, blogService, profileService, eventService, surveyService } from '../services/api.service';
 import toast from 'react-hot-toast';
 import ImageSlider from '../components/ImageSlider';
 import CommentModal from '../components/CommentModal';
@@ -53,6 +53,12 @@ const Dashboard = () => {
     const [modalUsers, setModalUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
 
+    // Survey State
+    const [activeSurveys, setActiveSurveys] = useState([]);
+    const [showSurveyModal, setShowSurveyModal] = useState(false);
+    const [surveyData, setSurveyData] = useState({ question: '', options: ['', ''], targetRole: 'all' });
+    const [isPostingSurvey, setIsPostingSurvey] = useState(false);
+
     const [pendingAlumni, setPendingAlumni] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -80,14 +86,17 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const [notifyRes, statsRes, blogsRes] = await Promise.all([
+            const [notifyRes, statsRes, blogsRes, surveysRes] = await Promise.all([
                 notificationService.getNotifications(),
                 user.role === 'admin' ? adminService.getStats() : adminService.getPublicStats(),
-                blogService.getBlogs()
+                blogService.getBlogs(),
+                surveyService.getSurveys()
             ]);
             setNotifications(notifyRes.data.data);
             setStats(statsRes.data.data);
-            setRecentBlogs(blogsRes.data.data.slice(0, 3));
+            setRecentBlogs(blogsRes.data.data.slice(0, 4));
+            setActiveSurveys(surveysRes.data.data || []);
+
 
             if (user.role === 'admin') {
                 const [pendingRes, jobsRes] = await Promise.all([
@@ -229,6 +238,44 @@ const Dashboard = () => {
             toast.error(error.response?.data?.message || 'Failed to send event notification');
         } finally {
             setIsSendingEvent(false);
+        }
+    };
+
+    const handlePostSurvey = async (e) => {
+        e.preventDefault();
+
+        // Filter out empty options
+        const validOptions = surveyData.options.filter(opt => opt.trim() !== '');
+        if (validOptions.length < 2) {
+            toast.error('Please provide at least two valid options');
+            return;
+        }
+
+        setIsPostingSurvey(true);
+        try {
+            await surveyService.createSurvey({
+                question: surveyData.question,
+                options: validOptions,
+                targetRole: surveyData.targetRole
+            });
+            toast.success('Poll published successfully!');
+            setShowSurveyModal(false);
+            setSurveyData({ question: '', options: ['', ''], targetRole: 'all' });
+            fetchDashboardData();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to post poll');
+        } finally {
+            setIsPostingSurvey(false);
+        }
+    };
+
+    const handleVoteSurvey = async (surveyId, optionId) => {
+        try {
+            await surveyService.voteSurvey(surveyId, optionId);
+            toast.success('Vote submitted!');
+            fetchDashboardData();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to submit vote');
         }
     };
 
@@ -552,6 +599,77 @@ const Dashboard = () => {
 
                 {/* Sidebar Widgets */}
                 <div className="space-y-8">
+                    {/* Active Polls Widget */}
+                    {activeSurveys.length > 0 && (
+                        <div className="glass-card p-6 border border-[var(--border)] space-y-4">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <PieChart size={20} className="text-[var(--primary)]" /> Active Polls
+                            </h3>
+                            <div className="space-y-4">
+                                {activeSurveys.map(poll => (
+                                    <div key={poll._id} className="p-4 bg-[var(--background)] rounded-2xl border border-[var(--border)] space-y-3 relative group">
+                                        {/* Admin Delete Button */}
+                                        {user?.role === 'admin' && (
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('Delete this poll?')) {
+                                                        try {
+                                                            await surveyService.deleteSurvey(poll._id);
+                                                            setActiveSurveys(activeSurveys.filter(s => s._id !== poll._id));
+                                                            toast.success('Poll deleted');
+                                                        } catch (e) { toast.error('Failed to delete poll'); }
+                                                    }
+                                                }}
+                                                className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-smooth"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+
+                                        <p className="font-bold text-gray-800 pr-6">{poll.question}</p>
+
+                                        {poll.hasVoted ? (
+                                            <div className="bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                                                <CheckCircle2 size={16} /> Thanks for voting!
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {poll.options.map(opt => (
+                                                    <button
+                                                        key={opt._id}
+                                                        onClick={() => handleVoteSurvey(poll._id, opt._id)}
+                                                        className="w-full text-left px-4 py-2 bg-white border border-[var(--border)] rounded-xl text-sm font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-smooth"
+                                                    >
+                                                        {opt.text}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Admin Results View */}
+                                        {user?.role === 'admin' && poll.totalVotes !== undefined && (
+                                            <div className="pt-2 border-t border-[var(--border)] mt-2">
+                                                <p className="text-xs text-gray-500 font-bold mb-2">Live Results ({poll.totalVotes} votes)</p>
+                                                <div className="space-y-1.5">
+                                                    {poll.options.map(opt => {
+                                                        const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0;
+                                                        return (
+                                                            <div key={'res_' + opt._id} className="text-xs text-gray-600 flex justify-between items-center bg-gray-50 px-2 py-1.5 rounded-lg border border-[var(--border)] relative overflow-hidden">
+                                                                <div className="absolute left-0 top-0 bottom-0 bg-[var(--primary)] opacity-10" style={{ width: `${pct}%` }}></div>
+                                                                <span className="relative z-10 w-2/3 truncate pr-2">{opt.text}</span>
+                                                                <span className="relative z-10 font-bold w-1/3 text-right">{opt.votes} ({pct}%)</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="glass-card p-6 border border-[var(--border)] space-y-4">
                         <h3 className="text-xl font-bold flex items-center gap-2">
                             <Bell size={20} className="text-[var(--primary)]" /> Notifications
@@ -593,7 +711,12 @@ const Dashboard = () => {
                                     <CalendarDays size={18} />
                                     <span className="text-sm font-bold">Event Invitation / Reminder</span>
                                 </button>
+                                <button onClick={() => setShowSurveyModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                    <BarChart2 size={18} />
+                                    <span className="text-sm font-bold">Post Poll / Survey</span>
+                                </button>
                             </div>
+
                         </div>
                     )}
                 </div>
@@ -891,6 +1014,79 @@ const Dashboard = () => {
                             <button disabled={isSendingEvent} type="submit"
                                 className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingEvent ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
                                 {isSendingEvent ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><CalendarDays size={20} /> Send {eventData.isReminder ? 'Reminder' : 'Invitation'}</>}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Post Poll / Survey Modal */}
+            {showSurveyModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><BarChart2 size={22} /> Post Poll / Survey</h2>
+                                <p className="text-sm text-gray-500 mt-1">Users can vote on their dashboard</p>
+                            </div>
+                            <button onClick={() => setShowSurveyModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handlePostSurvey} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Question</label>
+                                <input required type="text" placeholder="e.g. What should be the theme for the next meetup?"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium text-lg"
+                                    value={surveyData.question}
+                                    onChange={(e) => setSurveyData({ ...surveyData, question: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-sm font-bold flex justify-between items-center">
+                                    <span>Options</span>
+                                    {surveyData.options.length < 6 && (
+                                        <button type="button"
+                                            onClick={() => setSurveyData({ ...surveyData, options: [...surveyData.options, ''] })}
+                                            className="text-xs text-[var(--primary)] font-bold hover:underline"
+                                        >+ Add Option</button>
+                                    )}
+                                </label>
+                                {surveyData.options.map((opt, idx) => (
+                                    <div key={idx} className="flex gap-2 items-center relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-gray-300 pointer-events-none"></div>
+                                        <input required type="text" placeholder={`Option ${idx + 1}`}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                            value={opt}
+                                            onChange={(e) => {
+                                                const newOps = [...surveyData.options];
+                                                newOps[idx] = e.target.value;
+                                                setSurveyData({ ...surveyData, options: newOps });
+                                            }}
+                                        />
+                                        {surveyData.options.length > 2 && (
+                                            <button type="button" onClick={() => {
+                                                const newOps = surveyData.options.filter((_, i) => i !== idx);
+                                                setSurveyData({ ...surveyData, options: newOps });
+                                            }} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-smooth"><X size={16} /></button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Target Audience</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
+                                        <button key={value} type="button"
+                                            onClick={() => setSurveyData({ ...surveyData, targetRole: value })}
+                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${surveyData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                        >{label}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button disabled={isPostingSurvey} type="submit"
+                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPostingSurvey ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                {isPostingSurvey ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Publishing...</> : <><BarChart2 size={20} /> Publish Poll</>}
                             </button>
                         </form>
                     </div>

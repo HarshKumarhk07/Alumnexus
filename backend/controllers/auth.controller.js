@@ -104,6 +104,9 @@ exports.register = async (req, res, next) => {
 
         sendTokenResponse(user, 201, res);
     } catch (err) {
+        if (err.code === 11000) {
+            return res.status(400).json({ success: false, message: 'User already exists with this email' });
+        }
         res.status(400).json({ success: false, message: err.message });
     }
 };

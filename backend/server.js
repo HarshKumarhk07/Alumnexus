@@ -68,6 +68,7 @@ app.use('/api/blogs', require('./routes/blog.routes'));
 app.use('/api/events', require('./routes/event.routes'));
 app.use('/api/gallery', require('./routes/gallery.routes'));
 app.use('/api/queries', require('./routes/query.routes'));
+app.use('/api/surveys', require('./routes/survey.routes'));
 
 // Basic health check
 app.get('/health', (req, res) => {
