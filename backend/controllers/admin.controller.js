@@ -63,6 +63,7 @@ exports.getStats = async (req, res) => {
 // @route   GET /api/admin/public-stats
 // @access  Private
 exports.getPublicStats = async (req, res) => {
+    console.log("REACHED getPublicStats", req.originalUrl);
     try {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));

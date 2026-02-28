@@ -16,11 +16,11 @@ const {
 } = require('../controllers/admin.controller');
 const { protect, authorize } = require('../middleware/auth');
 
-// Protect all routes
-router.use(protect);
-
-// Publicly accessible stats for all authenticated users
+// Publicly accessible stats for all visitors (including unauthenticated landing page)
 router.get('/public-stats', getPublicStats);
+
+// Protect all following routes
+router.use(protect);
 
 // Restrict following routes to admin only
 router.use(authorize('admin'));

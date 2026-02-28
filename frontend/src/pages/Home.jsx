@@ -1,8 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Briefcase, BookOpen, ShieldCheck, ArrowRight, Zap } from 'lucide-react';
 import ImageSlider from '../components/ImageSlider';
+import { adminService } from '../services/api.service';
+
 const Home = () => {
+    const [stats, setStats] = useState({
+        alumniCount: '5,000+',
+        activeJobs: '1,200+',
+        insights: '450+',
+        partners: '120+' // Currently no partner count in backend, fallback to static
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await adminService.getPublicStats();
+                if (res?.data?.data) {
+                    const data = res.data.data;
+                    setStats(prev => ({
+                        ...prev,
+                        alumniCount: data.alumniCount > 0 ? `${data.alumniCount}+` : '0',
+                        activeJobs: data.activeJobs > 0 ? `${data.activeJobs}+` : '0',
+                        insights: data.insights > 0 ? `${data.insights}+` : '0',
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch landing page stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
         <div className="space-y-20 py-8">
             <section className="w-[100vw] relative left-[50%] right-[50%] -ml-[50vw] -mr-[50vw] px-4 md:px-8 mb-8">
@@ -33,10 +62,10 @@ const Home = () => {
             {/* Stats Section */}
             <section className="grid grid-cols-2 md:grid-cols-4 gap-8 px-4">
                 {[
-                    { label: 'Active Alumni', value: '5,000+', icon: Users },
-                    { label: 'Placements', value: '1,200+', icon: Briefcase },
-                    { label: 'Success Stories', value: '450+', icon: BookOpen },
-                    { label: 'Trusted Partners', value: '120+', icon: ShieldCheck },
+                    { label: 'Active Alumni', value: stats.alumniCount, icon: Users },
+                    { label: 'Placements', value: stats.activeJobs, icon: Briefcase },
+                    { label: 'Success Stories', value: stats.insights, icon: BookOpen },
+                    { label: 'Trusted Partners', value: stats.partners, icon: ShieldCheck },
                 ].map((stat, i) => (
                     <div key={i} className="text-center space-y-2 glass-card p-6 border border-[var(--border)]">
                         <div className="w-12 h-12 bg-[var(--accent)] text-[var(--primary)] rounded-xl flex items-center justify-center mx-auto mb-4">

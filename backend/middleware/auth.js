@@ -3,6 +3,7 @@ const User = require('../models/user.model');
 
 // Protect routes
 exports.protect = async (req, res, next) => {
+    console.log("Protecting route:", req.originalUrl);
     let token;
 
     if (
