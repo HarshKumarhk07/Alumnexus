@@ -174,40 +174,72 @@ const Gallery = () => {
                             <h2 className="text-2xl font-bold text-[var(--primary)]">Upload New Memory</h2>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                         </div>
-                        <form onSubmit={handleUpload} className="p-10 space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Image Files</label>
-                                <input required type="file" multiple accept="image/*" className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
-                                    onChange={(e) => setImageFiles(e.target.files)}
-                                />
-                                {imageFiles && imageFiles.length > 0 && (
-                                    <p className="text-xs text-green-600 font-medium">{imageFiles.length} file(s) selected</p>
-                                )}
+                        <form onSubmit={handleUpload} className="p-10 space-y-8">
+                            <div className="space-y-4">
+                                <label className="text-sm font-bold text-gray-700">Visual Memory</label>
+                                <div className="relative group/upload">
+                                    <input
+                                        required
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        onChange={(e) => setImageFiles(e.target.files)}
+                                    />
+                                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-smooth group-hover/upload:border-[var(--primary)] group-hover/upload:bg-[var(--accent)]/10">
+                                        <div className="p-3 bg-white rounded-xl shadow-sm text-[var(--primary)]">
+                                            <ImageIcon size={24} />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="font-bold text-sm text-gray-700">
+                                                {imageFiles && imageFiles.length > 0
+                                                    ? `${imageFiles.length} file(s) selected`
+                                                    : 'Drop your memories here or browse'}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG or WebP up to 10MB</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Category</label>
-                                <select className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
-                                    value={newMedia.category}
-                                    onChange={(e) => setNewMedia({ ...newMedia, category: e.target.value })}
-                                >
-                                    {categories.slice(1).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                </select>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-gray-700">Category</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                                        value={newMedia.category}
+                                        onChange={(e) => setNewMedia({ ...newMedia, category: e.target.value })}
+                                    >
+                                        {categories.slice(1).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-gray-700">Caption Tag</label>
+                                    <input
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                                        placeholder="Add a short caption..."
+                                        value={newMedia.caption}
+                                        onChange={(e) => setNewMedia({ ...newMedia, caption: e.target.value })}
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Caption</label>
-                                <input required className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
-                                    placeholder="Short description of this moment..."
-                                    value={newMedia.caption}
-                                    onChange={(e) => setNewMedia({ ...newMedia, caption: e.target.value })}
-                                />
-                            </div>
-                            <button disabled={isUploading} type="submit" className={`w - full py - 4 bg - [var(--primary)]text - white rounded - xl font - bold premium - shadow transition - smooth flex items - center justify - center gap - 2 ${isUploading ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'} `}>
+
+                            <button
+                                disabled={isUploading}
+                                type="submit"
+                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isUploading ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'} `}
+                            >
                                 {isUploading ? (
                                     <>
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Uploading...
+                                        Preserving...
                                     </>
-                                ) : 'Share Memory'}
+                                ) : (
+                                    <>
+                                        <Plus size={20} /> Share Memory
+                                    </>
+                                )}
                             </button>
                         </form>
                     </div>

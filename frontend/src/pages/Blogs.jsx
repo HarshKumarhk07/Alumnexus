@@ -84,10 +84,13 @@ const Blogs = () => {
                 return newBlogs;
             });
 
-            // Make the API call in the background
-            await blogService.likeBlog(id);
+            // Make the API call
+            const res = await blogService.likeBlog(id);
+
+            // Sync with server response to ensure author and likes are correct
+            setBlogs(prevBlogs => prevBlogs.map(b => (b._id === id ? res.data.data : b)));
         } catch (err) {
-            // Revert optimistic update on failure by refetching
+            // Revert on failure
             fetchBlogs();
             toast.error('Action failed');
         }

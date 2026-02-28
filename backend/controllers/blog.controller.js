@@ -67,6 +67,7 @@ exports.likeBlog = async (req, res) => {
         }
 
         await blog.save();
+        await blog.populate('author', 'name');
         res.status(200).json({ success: true, data: blog });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

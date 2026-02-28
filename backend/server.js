@@ -38,6 +38,8 @@ app.use(cors({
 
     if (normalizedAllowed.indexOf(normalizedOrigin) === -1) {
       const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+      console.error('CORS Error:', msg);
+      console.log('Allowed Origins (normalized):', normalizedAllowed);
       return callback(new Error(msg), false);
     }
     return callback(null, true);
