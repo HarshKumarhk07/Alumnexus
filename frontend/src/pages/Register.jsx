@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, Briefcase, GraduationCap, Loader2, Eye, EyeOff, Building2, BadgeCheck, FileText, Linkedin, Award } from 'lucide-react';
+import { User, Mail, Lock, Briefcase, GraduationCap, Loader2, Eye, EyeOff, Building2, BadgeCheck, FileText, Linkedin, Award, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Register = () => {

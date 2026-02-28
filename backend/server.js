@@ -29,17 +29,23 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    // Normalize both the request origin and allowed origins (strip trailing slashes)
-    const normalizedOrigin = origin.replace(/\/$/, '').toLowerCase();
-    const normalizedAllowed = allowedOrigins.map(o => o.replace(/\/$/, '').toLowerCase());
+    // Normalize: trim, lowercase, and remove trailing slash
+    const normalizedOrigin = origin.trim().replace(/\/$/, '').toLowerCase();
+    const isVercelDomain = normalizedOrigin.endsWith('.vercel.app');
 
-    if (normalizedAllowed.indexOf(normalizedOrigin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-      console.error('CORS Error:', msg);
-      console.log('Allowed Origins (normalized):', normalizedAllowed);
+    const normalizedAllowed = allowedOrigins.map(o =>
+      String(o).trim().replace(/\/$/, '').toLowerCase()
+    );
+
+    if (!isVercelDomain && normalizedAllowed.indexOf(normalizedOrigin) === -1) {
+      console.error('CORS REJECTED:', {
+        requestOrigin: origin,
+        normalizedOrigin,
+        allowedOrigins: normalizedAllowed
+      });
+      const msg = `CORS policy blocked access from: ${origin}`;
       return callback(new Error(msg), false);
     }
     return callback(null, true);
