@@ -289,71 +289,71 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                <div className="bg-white rounded-[32px] w-full max-w-3xl max-h-[90vh] flex flex-col premium-shadow overflow-hidden text-left animate-scale-in">
-                    <div className="p-6 md:p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
-                        <h2 className="text-2xl font-bold text-[var(--primary)]">Settings</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth">
-                            <X size={24} />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-2 md:p-4">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[24px] md:rounded-[32px] w-full max-w-3xl max-h-[92vh] flex flex-col premium-shadow overflow-hidden text-left animate-scale-in">
+                    <div className="p-4 md:p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                        <h2 className="text-xl md:text-2xl font-bold text-[var(--primary)]">Settings</h2>
+                        <button onClick={onClose} className="p-1.5 md:p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth">
+                            <X size={20} className="md:w-6 md:h-6" />
                         </button>
                     </div>
 
-                    <div className="flex border-b border-gray-100 shrink-0">
+                    <div className="flex border-b border-[var(--border)] shrink-0">
                         <button
                             onClick={() => setActiveTab('profile')}
                             className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
-                            ${activeTab === 'profile' ? 'border-[var(--primary)] text-[var(--primary)] bg-gray-50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                            ${activeTab === 'profile' ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5' : 'border-transparent text-[var(--text-light)]/60 hover:bg-[var(--primary)]/5'}`}
                         >
                             <User size={18} /> Edit Profile
                         </button>
                         <button
                             onClick={() => setActiveTab('security')}
-                            className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
-                                ${activeTab === 'security' ? 'border-[var(--primary)] text-[var(--primary)] bg-gray-50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                            className={`flex-1 py-3 md:py-4 text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
+                                ${activeTab === 'security' ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5' : 'border-transparent text-[var(--text-light)]/60 hover:bg-[var(--primary)]/5'}`}
                         >
-                            <Lock size={18} /> Password & Security
+                            <Lock size={16} className="md:w-[18px]" /> Security
                         </button>
                         {user?.role === 'alumni' && (
                             <button
                                 onClick={() => setActiveTab('professional')}
-                                className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
-                                    ${activeTab === 'professional' ? 'border-[var(--primary)] text-[var(--primary)] bg-gray-50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                                className={`flex-1 py-3 md:py-4 text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
+                                    ${activeTab === 'professional' ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5' : 'border-transparent text-[var(--text-light)]/60 hover:bg-[var(--primary)]/5'}`}
                             >
-                                <Briefcase size={18} /> Professional Profile
+                                <Briefcase size={16} className="md:w-[18px]" /> Professional
                             </button>
                         )}
                         {user?.role === 'student' && (
                             <button
                                 onClick={() => setActiveTab('academic')}
-                                className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
-                                    ${activeTab === 'academic' ? 'border-[var(--primary)] text-[var(--primary)] bg-gray-50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                                className={`flex-1 py-3 md:py-4 text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-smooth border-b-2
+                                    ${activeTab === 'academic' ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5' : 'border-transparent text-[var(--text-light)]/60 hover:bg-[var(--primary)]/5'}`}
                             >
-                                <Briefcase size={18} /> Academic Profile
+                                <Briefcase size={16} className="md:w-[18px]" /> Academic
                             </button>
                         )}
                     </div>
 
-                    <div className="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="p-4 md:p-8 overflow-y-auto flex-1 custom-scrollbar">
                         {activeTab === 'profile' ? (
                             <form onSubmit={handleProfileSubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 pl-2">Full Name</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-light)]/40 pl-2">Full Name</label>
                                     <input
                                         required
                                         type="text"
                                         value={profileData.name}
                                         onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                        className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-[var(--background)] border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-[var(--text-dark)]"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 pl-2">Email Address</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-light)]/40 pl-2">Email Address</label>
                                     <input
                                         required
                                         type="email"
                                         value={profileData.email}
                                         onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                                        className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-[var(--background)] border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-[var(--text-dark)]"
                                     />
                                 </div>
                                 <button
@@ -372,85 +372,98 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                 ) : (
                                     <div className="space-y-6 pr-2">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-gray-400 pl-2">Experience Summary (Bio)</label>
+                                            <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-light)]/40 pl-2">Experience Summary (Bio)</label>
                                             <textarea
                                                 value={alumniData.bio}
                                                 onChange={(e) => setAlumniData({ ...alumniData, bio: e.target.value })}
-                                                className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-white transition-smooth font-medium resize-none h-24"
+                                                className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-medium resize-none h-24 text-[var(--text-dark)]"
                                                 placeholder="Write a brief professional summary..."
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Batch Year</label>
-                                                <input type="number" value={alumniData.batchYear} onChange={e => setAlumniData({ ...alumniData, batchYear: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" placeholder="e.g. 2024" />
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Batch Year</label>
+                                                <input type="number" value={alumniData.batchYear} onChange={e => setAlumniData({ ...alumniData, batchYear: e.target.value })} className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" placeholder="e.g. 2024" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Branch</label>
-                                                <input type="text" value={alumniData.branch} onChange={e => setAlumniData({ ...alumniData, branch: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" placeholder="e.g. Computer Science" />
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Branch</label>
+                                                <select
+                                                    value={alumniData.branch}
+                                                    onChange={e => setAlumniData({ ...alumniData, branch: e.target.value })}
+                                                    className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]"
+                                                >
+                                                    <option value="">Select Branch</option>
+                                                    <option value="Computer Science">Computer Science</option>
+                                                    <option value="Information Technology">Information Technology</option>
+                                                    <option value="Electronics">Electronics</option>
+                                                    <option value="Mechanical">Mechanical</option>
+                                                    <option value="Civil">Civil</option>
+                                                    <option value="Electrical">Electrical</option>
+                                                    <option value="Others">Others</option>
+                                                </select>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Roll Number</label>
-                                                <input type="text" value={alumniData.rollNumber} onChange={e => setAlumniData({ ...alumniData, rollNumber: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" placeholder="e.g. 21BCE0001" />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Current Designation</label>
-                                                <div className="relative">
-                                                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                    <input type="text" value={alumniData.designation} onChange={e => setAlumniData({ ...alumniData, designation: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Company</label>
-                                                <div className="relative">
-                                                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                    <input type="text" value={alumniData.company} onChange={e => setAlumniData({ ...alumniData, company: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
-                                                </div>
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Roll Number</label>
+                                                <input type="text" value={alumniData.rollNumber} onChange={e => setAlumniData({ ...alumniData, rollNumber: e.target.value })} className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" placeholder="e.g. 21BCE0001" />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">LinkedIn URL</label>
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Current Designation</label>
                                                 <div className="relative">
-                                                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                    <input type="url" placeholder="https://" value={alumniData.linkedin} onChange={e => setAlumniData({ ...alumniData, linkedin: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                    <input type="text" value={alumniData.designation} onChange={e => setAlumniData({ ...alumniData, designation: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Portfolio / Website</label>
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Company</label>
                                                 <div className="relative">
-                                                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                    <input type="url" placeholder="https://" value={alumniData.portfolio} onChange={e => setAlumniData({ ...alumniData, portfolio: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                    <input type="text" value={alumniData.company} onChange={e => setAlumniData({ ...alumniData, company: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">LinkedIn URL</label>
+                                                <div className="relative">
+                                                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                    <input type="url" placeholder="https://" value={alumniData.linkedin} onChange={e => setAlumniData({ ...alumniData, linkedin: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Portfolio / Website</label>
+                                                <div className="relative">
+                                                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                    <input type="url" placeholder="https://" value={alumniData.portfolio} onChange={e => setAlumniData({ ...alumniData, portfolio: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-gray-400 pl-2">Location</label>
+                                            <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Location</label>
                                             <div className="relative">
-                                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                <input type="text" placeholder="e.g. San Francisco, CA" value={alumniData.location} onChange={e => setAlumniData({ ...alumniData, location: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                <input type="text" placeholder="e.g. San Francisco, CA" value={alumniData.location} onChange={e => setAlumniData({ ...alumniData, location: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-gray-400 pl-2">Skills (Comma separated)</label>
-                                            <input type="text" placeholder="e.g. React, Node.js, Python" value={alumniData.skills} onChange={e => setAlumniData({ ...alumniData, skills: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                            <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Skills (Comma separated)</label>
+                                            <input type="text" placeholder="e.g. React, Node.js, Python" value={alumniData.skills} onChange={e => setAlumniData({ ...alumniData, skills: e.target.value })} className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-gray-400 pl-2">Profile Photo Updates</label>
+                                            <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Profile Photo Updates</label>
                                             <div className="relative flex items-center justify-center w-full">
-                                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-smooth">
+                                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-[var(--border)] border-dashed rounded-xl cursor-pointer bg-[var(--background)] hover:bg-[var(--primary)]/5 transition-smooth group/upload">
                                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                        <Upload className="w-6 h-6 mb-2 text-gray-400" />
-                                                        <p className="text-xs text-gray-500 font-medium">
-                                                            {profilePhotoFile ? profilePhotoFile.name : "Click to upload a new profile photo (Cloudinary)"}
+                                                        <Upload className="w-6 h-6 mb-2 text-[var(--text-light)]/40 group-hover/upload:text-[var(--primary)] transition-smooth" />
+                                                        <p className="text-xs text-[var(--text-light)]/60 font-medium group-hover/upload:text-[var(--text-dark)] transition-smooth">
+                                                            {profilePhotoFile ? profilePhotoFile.name : "Click to upload a new profile photo"}
                                                         </p>
                                                     </div>
                                                     <input type="file" className="hidden" accept="image/*" onChange={(e) => {
@@ -485,45 +498,45 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                                 {alumniData.projects?.map((project, index) => (
                                                     <div key={index} className="animate-fade-in group">
                                                         {editingProjectIndex === index && editingRole === 'alumni' ? (
-                                                            <div className="p-6 bg-white border-2 border-[var(--primary)] rounded-2xl space-y-4 shadow-xl">
+                                                            <div className="p-6 bg-[var(--surface)] border-2 border-[var(--primary)] rounded-2xl space-y-4 shadow-xl">
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                     <div className="space-y-1">
-                                                                        <label className="text-[10px] font-bold uppercase text-gray-400 pl-1">Project Title</label>
+                                                                        <label className="text-[10px] font-bold uppercase text-[var(--text-light)]/40 pl-1">Project Title</label>
                                                                         <input
                                                                             type="text"
                                                                             placeholder="Project Title"
                                                                             value={project.title}
                                                                             onChange={(e) => handleProjectChange('alumni', index, 'title', e.target.value)}
-                                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-sm"
+                                                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-sm text-[var(--text-dark)]"
                                                                         />
                                                                     </div>
                                                                     <div className="space-y-1">
-                                                                        <label className="text-[10px] font-bold uppercase text-gray-400 pl-1">GitHub Link</label>
+                                                                        <label className="text-[10px] font-bold uppercase text-[var(--text-light)]/40 pl-1">GitHub Link</label>
                                                                         <input
                                                                             type="text"
                                                                             placeholder="https://github.com/..."
                                                                             value={project.githubLink}
                                                                             onChange={(e) => handleProjectChange('alumni', index, 'githubLink', e.target.value)}
-                                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-sm"
+                                                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-sm text-[var(--text-dark)]"
                                                                         />
                                                                     </div>
                                                                     <div className="space-y-1">
-                                                                        <label className="text-[10px] font-bold uppercase text-gray-400 pl-1">Live Link</label>
+                                                                        <label className="text-[10px] font-bold uppercase text-[var(--text-light)]/40 pl-1">Live Link</label>
                                                                         <input
                                                                             type="text"
                                                                             placeholder="https://live-demo.com..."
                                                                             value={project.liveLink}
                                                                             onChange={(e) => handleProjectChange('alumni', index, 'liveLink', e.target.value)}
-                                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-sm"
+                                                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-sm text-[var(--text-dark)]"
                                                                         />
                                                                     </div>
                                                                     <div className="space-y-1 md:col-span-2">
-                                                                        <label className="text-[10px] font-bold uppercase text-gray-400 pl-1">Description</label>
+                                                                        <label className="text-[10px] font-bold uppercase text-[var(--text-light)]/40 pl-1">Description</label>
                                                                         <textarea
                                                                             placeholder="Brief description of your project..."
                                                                             value={project.description}
                                                                             onChange={(e) => handleProjectChange('alumni', index, 'description', e.target.value)}
-                                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium text-sm h-20 resize-none"
+                                                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium text-sm h-20 resize-none text-[var(--text-dark)]"
                                                                         />
                                                                     </div>
                                                                 </div>
@@ -545,23 +558,23 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <div className="p-5 bg-gray-50 border border-gray-100 rounded-2xl flex justify-between items-center hover:border-[var(--primary)] hover:bg-white transition-smooth group/card">
+                                                            <div className="p-5 bg-[var(--background)] border border-[var(--border)] rounded-2xl flex justify-between items-center hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-smooth group/card">
                                                                 <div>
                                                                     <h5 className="font-bold text-[var(--primary)]">{project.title || 'Untitled Project'}</h5>
-                                                                    <p className="text-xs text-gray-400 font-medium truncate max-w-[200px]">{project.description || 'No description'}</p>
+                                                                    <p className="text-xs text-[var(--text-light)]/60 font-medium truncate max-w-[200px]">{project.description || 'No description'}</p>
                                                                 </div>
                                                                 <div className="flex gap-2">
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleEditProject('alumni', index)}
-                                                                        className="p-2 text-gray-400 hover:text-[var(--primary)] hover:bg-[var(--accent)] rounded-lg transition-smooth"
+                                                                        className="p-2 text-[var(--text-light)]/40 hover:text-[var(--primary)] hover:bg-[var(--accent)] rounded-lg transition-smooth"
                                                                     >
                                                                         <Edit2 size={16} />
                                                                     </button>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleRemoveProject('alumni', index)}
-                                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-smooth"
+                                                                        className="p-2 text-[var(--text-light)]/40 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-smooth"
                                                                     >
                                                                         <Trash2 size={16} />
                                                                     </button>
@@ -571,7 +584,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                                     </div>
                                                 ))}
                                                 {alumniData.projects?.length === 0 && (
-                                                    <div className="p-8 text-center border-2 border-dashed border-gray-100 rounded-[32px] text-gray-400">
+                                                    <div className="p-8 text-center border-2 border-dashed border-[var(--border)] rounded-[32px] text-[var(--text-light)]/20">
                                                         <Briefcase size={32} className="mx-auto mb-2 opacity-20" />
                                                         <p className="text-xs font-bold uppercase tracking-tight">No projects added yet</p>
                                                     </div>
@@ -579,26 +592,26 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                             </div>
                                         </div>
 
-                                        <div className="mt-6 p-4 bg-[var(--surface)] border border-[var(--primary)]/20 rounded-xl space-y-4">
+                                        <div className="mt-6 p-4 bg-[var(--background)] border border-[var(--primary)]/20 rounded-xl space-y-4">
                                             <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider">Available For</h4>
                                             <div className="flex flex-col gap-3">
                                                 <label className="flex items-center gap-3 cursor-pointer group">
                                                     <div className="relative flex items-center">
-                                                        <input type="checkbox" checked={alumniData.mentorshipAvailable} onChange={(e) => setAlumniData({ ...alumniData, mentorshipAvailable: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer" />
+                                                        <input type="checkbox" checked={alumniData.mentorshipAvailable} onChange={(e) => setAlumniData({ ...alumniData, mentorshipAvailable: e.target.checked })} className="w-5 h-5 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer" />
                                                     </div>
-                                                    <span className="text-sm font-semibold text-gray-700 group-hover:text-black transition-smooth">Mentorship</span>
+                                                    <span className="text-sm font-semibold text-[var(--text-dark)] group-hover:text-[var(--primary)] transition-smooth">Mentorship</span>
                                                 </label>
                                                 <label className="flex items-center gap-3 cursor-pointer group">
                                                     <div className="relative flex items-center">
-                                                        <input type="checkbox" checked={alumniData.resumeReview} onChange={(e) => setAlumniData({ ...alumniData, resumeReview: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer" />
+                                                        <input type="checkbox" checked={alumniData.resumeReview} onChange={(e) => setAlumniData({ ...alumniData, resumeReview: e.target.checked })} className="w-5 h-5 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer" />
                                                     </div>
-                                                    <span className="text-sm font-semibold text-gray-700 group-hover:text-black transition-smooth">Resume Review</span>
+                                                    <span className="text-sm font-semibold text-[var(--text-dark)] group-hover:text-[var(--primary)] transition-smooth">Resume Review</span>
                                                 </label>
                                                 <label className="flex items-center gap-3 cursor-pointer group">
                                                     <div className="relative flex items-center">
-                                                        <input type="checkbox" checked={alumniData.referrals} onChange={(e) => setAlumniData({ ...alumniData, referrals: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer" />
+                                                        <input type="checkbox" checked={alumniData.referrals} onChange={(e) => setAlumniData({ ...alumniData, referrals: e.target.checked })} className="w-5 h-5 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer" />
                                                     </div>
-                                                    <span className="text-sm font-semibold text-gray-700 group-hover:text-black transition-smooth">Referrals</span>
+                                                    <span className="text-sm font-semibold text-[var(--text-dark)] group-hover:text-[var(--primary)] transition-smooth">Referrals</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -622,50 +635,63 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                     <div className="space-y-6 pr-2">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Branch</label>
-                                                <input type="text" value={studentData.branch} onChange={e => setStudentData({ ...studentData, branch: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" placeholder="e.g. Computer Science" />
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Branch</label>
+                                                <select
+                                                    value={studentData.branch}
+                                                    onChange={e => setStudentData({ ...studentData, branch: e.target.value })}
+                                                    className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]"
+                                                >
+                                                    <option value="">Select Branch</option>
+                                                    <option value="Computer Science">Computer Science</option>
+                                                    <option value="Information Technology">Information Technology</option>
+                                                    <option value="Electronics">Electronics</option>
+                                                    <option value="Mechanical">Mechanical</option>
+                                                    <option value="Civil">Civil</option>
+                                                    <option value="Electrical">Electrical</option>
+                                                    <option value="Others">Others</option>
+                                                </select>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">Year of Study</label>
-                                                <input type="number" min="1" max="5" value={studentData.year} onChange={e => setStudentData({ ...studentData, year: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" placeholder="e.g. 3" />
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Year of Study</label>
+                                                <input type="number" min="1" max="5" value={studentData.year} onChange={e => setStudentData({ ...studentData, year: e.target.value })} className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" placeholder="e.g. 3" />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">LinkedIn URL</label>
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">LinkedIn URL</label>
                                                 <div className="relative">
-                                                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                    <input type="url" placeholder="https://linkedin.com/in/..." value={studentData.linkedin} onChange={e => setStudentData({ ...studentData, linkedin: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                    <input type="url" placeholder="https://linkedin.com/in/..." value={studentData.linkedin} onChange={e => setStudentData({ ...studentData, linkedin: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-gray-400 pl-2">GitHub URL</label>
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">GitHub URL</label>
                                                 <div className="relative">
-                                                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                                    <input type="url" placeholder="https://github.com/..." value={studentData.github} onChange={e => setStudentData({ ...studentData, github: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]/40" size={16} />
+                                                    <input type="url" placeholder="https://github.com/..." value={studentData.github} onChange={e => setStudentData({ ...studentData, github: e.target.value })} className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-gray-400 pl-2">Career Interest</label>
-                                            <input type="text" placeholder="e.g. Software Development, Data Science" value={studentData.careerInterest} onChange={e => setStudentData({ ...studentData, careerInterest: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                            <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Career Interest</label>
+                                            <input type="text" placeholder="e.g. Software Development, Data Science" value={studentData.careerInterest} onChange={e => setStudentData({ ...studentData, careerInterest: e.target.value })} className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-gray-400 pl-2">Skills (Comma separated)</label>
-                                            <input type="text" placeholder="e.g. React, Node.js, Python" value={studentData.skills} onChange={e => setStudentData({ ...studentData, skills: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold text-sm" />
+                                            <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Skills (Comma separated)</label>
+                                            <input type="text" placeholder="e.g. React, Node.js, Python" value={studentData.skills} onChange={e => setStudentData({ ...studentData, skills: e.target.value })} className="w-full px-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-sm text-[var(--text-dark)]" />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-gray-400 pl-2">Profile Photo Updates</label>
+                                            <label className="text-xs font-bold uppercase text-[var(--text-light)]/40 pl-2">Profile Photo Updates</label>
                                             <div className="relative flex items-center justify-center w-full">
-                                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-smooth">
+                                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-[var(--border)] border-dashed rounded-xl cursor-pointer bg-[var(--background)] hover:bg-[var(--primary)]/5 transition-smooth group/upload">
                                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                        <Upload className="w-6 h-6 mb-2 text-gray-400" />
-                                                        <p className="text-xs text-gray-500 font-medium">
-                                                            {profilePhotoFile ? profilePhotoFile.name : "Click to upload a new profile photo (Cloudinary)"}
+                                                        <Upload className="w-6 h-6 mb-2 text-[var(--text-light)]/40 group-hover/upload:text-[var(--primary)] transition-smooth" />
+                                                        <p className="text-xs text-[var(--text-light)]/60 font-medium group-hover/upload:text-[var(--text-dark)] transition-smooth">
+                                                            {profilePhotoFile ? profilePhotoFile.name : "Click to upload a new profile photo"}
                                                         </p>
                                                     </div>
                                                     <input type="file" className="hidden" accept="image/*" onChange={(e) => {
@@ -680,7 +706,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center pl-2 pr-1">
-                                                <label className="text-xs font-bold uppercase text-gray-400">Update Resume</label>
+                                                <label className="text-xs font-bold uppercase text-[var(--text-light)]/40">Update Resume</label>
                                                 {studentData.resumeURL && (
                                                     <button
                                                         type="button"
@@ -692,10 +718,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                                 )}
                                             </div>
                                             <div className="relative flex items-center justify-center w-full">
-                                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-smooth">
+                                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-[var(--border)] border-dashed rounded-xl cursor-pointer bg-[var(--background)] hover:bg-[var(--primary)]/5 transition-smooth group/upload">
                                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                        <Upload className="w-6 h-6 mb-2 text-gray-400" />
-                                                        <p className="text-xs text-gray-500 font-medium">
+                                                        <Upload className="w-6 h-6 mb-2 text-[var(--text-light)]/40 group-hover/upload:text-[var(--primary)] transition-smooth" />
+                                                        <p className="text-xs text-[var(--text-light)]/60 font-medium group-hover/upload:text-[var(--text-dark)] transition-smooth text-center px-4">
                                                             {uploadResumeFile ? uploadResumeFile.name : studentData.resumeURL ? "Resume uploaded ✅. Click to replace." : "Click to upload a resume (PDF/DOC)"}
                                                         </p>
                                                     </div>
@@ -834,39 +860,39 @@ const SettingsModal = ({ isOpen, onClose }) => {
                         ) : (
                             <form onSubmit={handlePasswordSubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 pl-2">Current Password</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-light)]/40 pl-2">Current Password</label>
                                     <input
                                         required
                                         type="password"
                                         value={passwordData.currentPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                        className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold"
+                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-[var(--text-dark)]"
                                         placeholder="Enter current password"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 pl-2">New Password</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-light)]/40 pl-2">New Password</label>
                                     <input
                                         required
                                         minLength="6"
                                         type="password"
                                         value={passwordData.newPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-white transition-smooth font-bold"
+                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-bold text-[var(--text-dark)]"
                                         placeholder="At least 6 characters"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 pl-2">Confirm New Password</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-light)]/40 pl-2">Confirm New Password</label>
                                     <input
                                         required
                                         minLength="6"
                                         type="password"
                                         value={passwordData.confirmPassword}
                                         onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        className={`w-full px-6 py-4 bg-gray-50 border-2 rounded-2xl focus:outline-none transition-smooth font-bold ${passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword
-                                            ? 'border-red-300 focus:border-red-500 bg-red-50'
-                                            : 'border-gray-100 focus:border-[var(--primary)] focus:bg-white'
+                                        className={`w-full px-6 py-4 bg-[var(--background)] border-2 rounded-2xl focus:outline-none transition-smooth font-bold text-[var(--text-dark)] ${passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword
+                                            ? 'border-red-500/50 focus:border-red-500 bg-red-500/5'
+                                            : 'border-[var(--border)] focus:border-[var(--primary)] focus:bg-[var(--surface)]'
                                             }`}
                                         placeholder="Confirm new password"
                                     />
@@ -887,10 +913,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
                 {/* Photo & Resume Confirmation Modal */}
                 {(pendingProfilePhoto || pendingResume) && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[105] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-[24px] w-full max-w-sm premium-shadow overflow-hidden text-center p-6 animate-scale-in">
+                        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[24px] w-full max-w-sm premium-shadow overflow-hidden text-center p-6 animate-scale-in">
                             <h3 className="text-xl font-bold text-[var(--primary)] mb-2">Confirm Upload</h3>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Are you sure you want to upload <strong>{pendingProfilePhoto ? pendingProfilePhoto.name : pendingResume.name}</strong>?
+                            <p className="text-sm text-[var(--text-light)]/60 mb-6">
+                                Are you sure you want to upload <strong className="text-[var(--text-dark)]">{pendingProfilePhoto ? pendingProfilePhoto.name : pendingResume.name}</strong>?
                             </p>
 
                             <div className="flex gap-3">
@@ -899,7 +925,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                         setPendingProfilePhoto(null);
                                         setPendingResume(null);
                                     }}
-                                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-smooth"
+                                    className="flex-1 py-3 bg-[var(--background)] text-[var(--text-light)]/60 rounded-xl font-bold hover:bg-[var(--border)] transition-smooth"
                                 >
                                     Cancel
                                 </button>
@@ -923,27 +949,27 @@ const SettingsModal = ({ isOpen, onClose }) => {
             {/* In-App Resume Image Preview Modal */}
             {
                 showResumePreview && studentData.resumeURL && (
-                    <div className="fixed inset-0 bg-white/10 z-[110] flex items-center justify-center p-4 sm:p-8 backdrop-blur-xl">
-                        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-full flex flex-col shadow-2xl overflow-hidden relative">
+                    <div className="fixed inset-0 bg-black/40 z-[110] flex items-center justify-center p-4 sm:p-8 backdrop-blur-xl transition-smooth">
+                        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-4xl max-h-full flex flex-col shadow-2xl overflow-hidden relative animate-scale-in">
                             {/* Header */}
-                            <div className="p-4 border-b flex items-center justify-between shadow-sm sticky top-0 bg-white z-10">
-                                <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between shadow-sm sticky top-0 bg-[var(--surface)] z-10 text-[var(--text-dark)]">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
                                     <FileText className="text-[var(--primary)]" size={20} />
                                     Resume Preview
                                 </h3>
                                 <button
                                     onClick={() => setShowResumePreview(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="p-2 hover:bg-[var(--accent)] rounded-full transition-colors"
                                 >
-                                    <X size={20} className="text-gray-500" />
+                                    <X size={20} className="text-[var(--text-light)]/60" />
                                 </button>
                             </div>
                             {/* Image Container */}
-                            <div className="flex-1 overflow-y-auto bg-gray-100 flex items-center justify-center p-4">
+                            <div className="flex-1 overflow-y-auto bg-[var(--background)] flex items-center justify-center p-4">
                                 <img
                                     src={getResumePreviewUrl(studentData.resumeURL)}
                                     alt="Resume Preview"
-                                    className="max-w-full h-auto object-contain shadow-md rounded border border-gray-200"
+                                    className="max-w-full h-auto object-contain shadow-md rounded border border-[var(--border)]"
                                     onError={(e) => {
                                         e.target.onerror = null; // Prevent infinite loop
                                         e.target.src = "https://via.placeholder.com/800x1000?text=Preview+Not+Available";

@@ -53,7 +53,7 @@ export const authService = {
         localStorage.removeItem('user');
     },
     getMe: () => API.get('/auth/me'),
-    updateProfile: (data) => API.put('/auth/profile'),
+    updateProfile: (data) => API.put('/auth/profile', data),
     updatePassword: (data) => API.put('/auth/password', data)
 };
 
@@ -137,7 +137,14 @@ export const adminService = {
     sendBulkEmail: (data) => API.post('/admin/bulk-email', data),
     deleteUser: (id) => API.delete(`/admin/users/${id}`),
     updateUserStatus: (id, data) => API.put(`/admin/users/status/${id}`, data),
-    exportStudents: () => API.get('/admin/export-students', { responseType: 'blob' })
+    exportStudents: () => API.get('/admin/export-students', { responseType: 'blob' }),
+    getSpotlight: () => API.get('/admin/spotlight'),
+    updateSpotlight: (data) => {
+        if (data instanceof FormData) {
+            return API.post('/admin/spotlight', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        }
+        return API.post('/admin/spotlight', data);
+    }
 };
 
 export const notificationService = {

@@ -176,7 +176,7 @@ const Queries = () => {
 
                                 <div className="flex justify-between items-start mb-4 relative z-10">
                                     <div className="flex gap-3 items-center">
-                                        <div className="w-10 h-10 bg-[var(--accent)] text-[var(--primary)] rounded-full flex items-center justify-center font-bold">
+                                        <div className="w-10 h-10 bg-[var(--accent)] text-white rounded-full flex items-center justify-center font-bold">
                                             {query.student?.name?.charAt(0) || 'S'}
                                         </div>
                                         <div>
@@ -273,7 +273,7 @@ const Queries = () => {
                                 </div>
                                 <h2 className="text-2xl font-bold text-[var(--primary)] leading-snug">{activeQuery.title}</h2>
                             </div>
-                            <button onClick={() => setActiveQuery(null)} className="p-2 hover:bg-[var(--accent)] rounded-xl transition-smooth shrink-0 bg-white">
+                            <button onClick={() => setActiveQuery(null)} className="p-2 hover:bg-[var(--accent)] hover:text-white rounded-xl transition-smooth shrink-0 bg-white">
                                 <X size={24} />
                             </button>
                         </div>

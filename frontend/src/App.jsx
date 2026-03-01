@@ -13,6 +13,7 @@ import Events from './pages/Events';
 import Gallery from './pages/Gallery';
 import AlumniDirectory from './pages/AlumniDirectory';
 import StudentDirectory from './pages/StudentDirectory';
+import PublicDirectory from './pages/PublicDirectory';
 import Queries from './pages/Queries';
 
 const ProtectedRoute = ({ children, roles }) => {
@@ -42,6 +43,7 @@ const App = () => {
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
           <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
+          <Route path="/public-directory" element={<PublicDirectory />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />

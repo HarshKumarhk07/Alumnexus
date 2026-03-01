@@ -87,7 +87,7 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 bg-[var(--primary)] text-[var(--text-light)] rounded-xl font-bold premium-shadow hover:bg-[var(--primary-light)] disabled:opacity-70 transition-smooth flex justify-center items-center gap-2"
+                        className="w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow hover:bg-[var(--primary-light)] disabled:opacity-70 transition-smooth flex justify-center items-center gap-2"
                     >
                         {loading ? <Loader2 className="animate-spin" size={20} /> : 'Login'}
                     </button>

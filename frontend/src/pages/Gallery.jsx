@@ -89,8 +89,8 @@ const Gallery = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 text-left">
                 <div>
-                    <h1 className="text-5xl font-extrabold text-[var(--primary)] tracking-tight">Memory Lane</h1>
-                    <p className="text-gray-600 mt-4 text-lg">
+                    <h1 className="text-5xl font-extrabold text-[var(--text-dark)] tracking-tight">Memory Lane</h1>
+                    <p className="text-[var(--text-light)] mt-4 text-lg opacity-80">
                         Capturing the legacy, achievements, and moments that define AlumNexus.
                     </p>
                 </div>
@@ -108,14 +108,14 @@ const Gallery = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-2 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-[var(--border)] inline-flex self-start">
+            <div className="flex flex-wrap gap-2 bg-[var(--surface)] backdrop-blur-md p-2 rounded-2xl border border-[var(--border)] inline-flex self-start">
                 {categories.map(cat => (
                     <button
                         key={cat}
                         onClick={() => setFilter(cat)}
                         className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${filter === cat
                             ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20 scale-105'
-                            : 'text-gray-500 hover:bg-white hover:text-[var(--primary)] hover:shadow-sm'
+                            : 'text-[var(--text-light)]/60 hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] hover:shadow-sm'
                             }`}
                     >
                         {cat}
@@ -161,9 +161,9 @@ const Gallery = () => {
                         </div>
                     ))}
                     {media.length === 0 && (
-                        <div className="col-span-full py-32 text-center glass-card border border-[var(--border)]">
-                            <Camera size={64} className="mx-auto text-gray-200 mb-4" />
-                            <p className="text-gray-400 font-medium text-lg">No precious moments captured in this category yet.</p>
+                        <div className="col-span-full py-32 text-center glass-card border border-[var(--border)] bg-[var(--surface)]">
+                            <Camera size={64} className="mx-auto text-[var(--primary)] opacity-40 mb-4" />
+                            <p className="text-[var(--text-light)] font-medium text-lg opacity-60">No precious moments captured in this category yet.</p>
                         </div>
                     )}
                 </div>
@@ -172,7 +172,7 @@ const Gallery = () => {
             {/* Upload Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in">
                         <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-[var(--primary)]">Upload New Memory</h2>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
@@ -189,8 +189,8 @@ const Gallery = () => {
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         onChange={(e) => setImageFiles(e.target.files)}
                                     />
-                                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-smooth group-hover/upload:border-[var(--primary)] group-hover/upload:bg-[var(--accent)]/10">
-                                        <div className="p-3 bg-white rounded-xl shadow-sm text-[var(--primary)]">
+                                    <div className="border-2 border-dashed border-[var(--border)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-smooth group-hover/upload:border-[var(--primary)] group-hover/upload:bg-[var(--accent)]/10">
+                                        <div className="p-3 bg-[var(--background)] rounded-xl shadow-sm text-[var(--primary)]">
                                             <ImageIcon size={24} />
                                         </div>
                                         <div className="text-center">
@@ -199,7 +199,7 @@ const Gallery = () => {
                                                     ? `${imageFiles.length} file(s) selected`
                                                     : 'Drop your memories here or browse'}
                                             </p>
-                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG or WebP up to 10MB</p>
+                                            <p className="text-xs text-[var(--text-light)]/60 mt-1">PNG, JPG or WebP up to 10MB</p>
                                         </div>
                                     </div>
                                 </div>
@@ -209,7 +209,7 @@ const Gallery = () => {
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-gray-700">Category</label>
                                     <select
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
                                         value={newMedia.category}
                                         onChange={(e) => setNewMedia({ ...newMedia, category: e.target.value })}
                                     >
@@ -220,7 +220,7 @@ const Gallery = () => {
                                     <label className="text-sm font-bold text-gray-700">Caption Tag</label>
                                     <input
                                         required
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
                                         placeholder="Add a short caption..."
                                         value={newMedia.caption}
                                         onChange={(e) => setNewMedia({ ...newMedia, caption: e.target.value })}
@@ -258,7 +258,7 @@ const Gallery = () => {
                         <img src={selectedImage.mediaURL} alt={selectedImage.caption} className="max-w-full max-h-[80vh] rounded-3xl premium-shadow" />
                         <div className="text-white text-center">
                             <h3 className="text-2xl font-bold">{selectedImage.caption}</h3>
-                            <p className="text-gray-400 mt-1 uppercase tracking-widest text-xs">{selectedImage.category} • Uploaded by {selectedImage.uploadedBy?.name}</p>
+                            <p className="text-[var(--text-light)]/60 mt-1 uppercase tracking-widest text-xs">{selectedImage.category} • Uploaded by {selectedImage.uploadedBy?.name}</p>
                         </div>
                     </div>
                 </div>

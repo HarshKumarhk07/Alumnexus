@@ -21,7 +21,7 @@ const NotificationModal = ({ isOpen, onClose, notification }) => {
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-[var(--accent)] text-[var(--primary)] rounded-xl transition-smooth"
+                        className="p-2 hover:bg-[var(--accent)] hover:text-white text-[var(--primary)] rounded-xl transition-smooth"
                     >
                         <X size={24} />
                     </button>

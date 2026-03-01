@@ -142,20 +142,20 @@ const Jobs = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
                     <h1 className="text-4xl font-bold text-[var(--primary)]">Opportunities</h1>
-                    <p className="text-gray-600 mt-2">Exclusive job and internship postings for the AlumNexus community</p>
+                    <p className="text-[var(--text-light)] mt-2 opacity-80">Exclusive job and internship postings for the AlumNexus community</p>
                 </div>
                 {((user.role === 'alumni' && user.isVerified) || user.role === 'admin') && (
                     <div className="flex gap-4">
-                        <div className="flex bg-gray-100 p-1 rounded-xl">
+                        <div className="flex bg-[var(--surface)] border border-[var(--border)] p-1 rounded-xl">
                             <button
                                 onClick={() => setViewMode('all')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-smooth ${viewMode === 'all' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-gray-500'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-smooth ${viewMode === 'all' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-light)] opacity-60'}`}
                             >
                                 All Jobs
                             </button>
                             <button
                                 onClick={() => setViewMode('my')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-smooth ${viewMode === 'my' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-gray-500'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-smooth ${viewMode === 'my' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-light)] opacity-60'}`}
                             >
                                 {user.role === 'admin' ? 'Manage All' : 'My Postings'}
                             </button>
@@ -177,7 +177,7 @@ const Jobs = () => {
                     <input
                         type="text"
                         placeholder="Search Company..."
-                        className="w-full pl-10 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth"
+                        className="w-full pl-10 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth text-sm font-medium text-[var(--text-dark)]"
                         value={filters.company}
                         onChange={(e) => setFilters({ ...filters, company: e.target.value })}
                     />
@@ -187,7 +187,7 @@ const Jobs = () => {
                     <input
                         type="text"
                         placeholder="Search Role..."
-                        className="w-full pl-10 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth"
+                        className="w-full pl-10 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth text-sm font-medium text-[var(--text-dark)]"
                         value={filters.role}
                         onChange={(e) => setFilters({ ...filters, role: e.target.value })}
                     />
@@ -197,7 +197,7 @@ const Jobs = () => {
                     <input
                         type="text"
                         placeholder="Search Location..."
-                        className="w-full pl-10 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth"
+                        className="w-full pl-10 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth text-sm font-medium text-[var(--text-dark)]"
                         value={filters.location}
                         onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                     />
@@ -206,109 +206,107 @@ const Jobs = () => {
 
             {/* Job List */}
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8">
                     {[1, 2, 3, 4].map(i => <div key={i} className="h-48 glass-card animate-pulse border border-[var(--border)]"></div>)}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8">
                     {filteredJobs.map(job => (
-                        <div key={job._id} className="glass-card premium-shadow p-6 border border-[var(--border)] flex flex-col justify-between hover:bg-[var(--surface)] transition-smooth group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-smooth">
-                                <Briefcase size={80} />
+                        <div key={job._id} className="bg-[var(--surface)] rounded-2xl md:rounded-[32px] premium-shadow p-3 md:p-6 border border-[var(--border)] flex flex-col justify-between hover:bg-[var(--primary)]/5 transition-smooth group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-2 md:p-3 opacity-10 group-hover:opacity-20 transition-smooth">
+                                <Briefcase size={40} className="md:w-20 md:h-20" />
                             </div>
 
-                            <div className="space-y-4 relative z-10 text-left">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center font-bold text-2xl text-[var(--primary)] border border-[var(--border)] group-hover:scale-110 transition-smooth">
+                            <div className="space-y-3 md:space-y-4 relative z-10 text-left">
+                                <div className="flex items-center gap-2 md:gap-4">
+                                    <div className="w-10 h-10 md:w-14 md:h-14 bg-[var(--accent)] rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-lg md:text-2xl text-white border border-[var(--border)] group-hover:scale-110 transition-smooth shrink-0">
                                         {job.company.charAt(0)}
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold group-hover:text-[var(--primary)] transition-smooth flex items-center gap-2">
+                                    <div className="min-w-0">
+                                        <h3 className="text-sm md:text-xl font-bold group-hover:text-[var(--primary)] transition-smooth flex items-center gap-1.5 text-[var(--text-dark)] truncate">
                                             {job.role}
-                                            {job.isActive === false && (
-                                                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg">Closed</span>
-                                            )}
                                         </h3>
-                                        <p className="text-[var(--primary-light)] font-bold">{job.company}</p>
+                                        <p className="text-[var(--primary)] font-bold opacity-80 text-xs md:text-base truncate">{job.company}</p>
                                     </div>
                                 </div>
 
-                                <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                                    {job.description || 'No description provided. Click apply to see more details on the portal.'}
+                                {job.isActive === false && (
+                                    <span className="inline-block text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-lg font-bold">Closed</span>
+                                )}
+
+                                <p className="hidden md:line-clamp-2 text-[var(--text-light)] opacity-70 text-sm leading-relaxed">
+                                    {job.description || 'No description provided.'}
                                 </p>
 
-                                <div className="flex flex-wrap gap-4 text-xs font-bold text-gray-500">
-                                    <div className="flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg">
-                                        <MapPin size={14} className="text-[var(--primary)]" /> {job.location}
+                                <div className="flex flex-col gap-1.5 md:gap-4 text-[10px] md:text-xs font-bold text-[var(--text-light)]">
+                                    <div className="flex items-center gap-1 bg-[var(--background)]/50 px-2 py-1 rounded-lg w-fit">
+                                        <MapPin size={12} className="text-[var(--primary)]" /> <span className="truncate max-w-[80px] md:max-w-none">{job.location}</span>
                                     </div>
-                                    <div className="flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1 bg-[var(--background)]/50 px-2 py-1 rounded-lg w-fit">
                                         <span className="font-extrabold text-green-600">₹</span> {job.package ? (job.package.toLowerCase().includes('lpa') ? job.package : `${job.package} LPA`) : 'Competitive'}
-                                    </div>
-                                    <div className="flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg">
-                                        <Calendar size={14} className="text-amber-600" /> {new Date(job.deadline).toLocaleDateString()}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex flex-col gap-3 relative z-10">
+                            <div className="mt-4 md:mt-6 flex flex-col gap-2 relative z-10">
                                 {user.role === 'student' ? (
                                     hasApplied(job) ? (
-                                        <div className="flex gap-3">
+                                        <div className="flex gap-2">
                                             <button
                                                 disabled
-                                                className="flex-1 py-3 text-white text-center font-bold rounded-xl transition-smooth premium-shadow flex items-center justify-center gap-2 bg-green-600 cursor-default"
+                                                className="flex-1 py-2 md:py-3 text-white text-center font-bold rounded-xl transition-smooth premium-shadow flex items-center justify-center gap-2 bg-green-600 cursor-default text-xs md:text-base"
                                             >
                                                 Applied
                                             </button>
                                             <button
                                                 onClick={() => handleWithdraw(job._id)}
                                                 disabled={applying[job._id]}
-                                                className="px-4 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-smooth border border-red-200"
+                                                className="px-3 py-2 md:py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-smooth border border-red-200 text-xs md:text-base"
                                             >
-                                                {applying[job._id] ? '...' : 'Deregister'}
+                                                {applying[job._id] ? '...' : <X size={16} />}
                                             </button>
                                         </div>
                                     ) : job.isActive === false ? (
                                         <button
                                             disabled
-                                            className="w-full py-3 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200"
+                                            className="w-full py-2 md:py-3 bg-gray-100 text-gray-400 rounded-xl font-bold text-[10px] md:text-sm cursor-not-allowed border border-gray-200"
                                         >
-                                            Drive Closed
+                                            Closed
                                         </button>
                                     ) : (
                                         <button
                                             onClick={() => handleApply(job._id)}
                                             disabled={applying[job._id]}
-                                            className="w-full py-3 text-white text-center font-bold rounded-xl transition-smooth premium-shadow flex items-center justify-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-light)]"
+                                            className="w-full py-2 md:py-3 text-white text-center font-bold rounded-xl transition-smooth premium-shadow flex items-center justify-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-light)] text-xs md:text-base"
                                         >
-                                            {applying[job._id] ? 'Applying...' : 'Apply Now'}
-                                            <ArrowUpRight size={18} />
+                                            {applying[job._id] ? '...' : 'Apply'}
+                                            <ArrowUpRight size={16} className="hidden md:block" />
                                         </button>
                                     )
                                 ) : (
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-2">
                                         {((String(job.postedBy?._id || job.postedBy) === String(user._id || user.id)) || user.role === 'admin') && (
                                             <button
                                                 onClick={() => fetchApplicants(job._id)}
-                                                className="flex-1 py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--primary)] font-bold rounded-xl hover:bg-[var(--accent)] transition-smooth flex items-center justify-center gap-2"
+                                                className="flex-1 py-2 md:py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--primary)] font-bold rounded-xl hover:bg-[var(--accent)] hover:text-white transition-smooth flex items-center justify-center gap-2 text-[10px] md:text-sm"
                                             >
-                                                View Applicants ({job.applicants?.length || 0})
+                                                Applicants ({job.applicants?.length || 0})
                                             </button>
                                         )}
                                         {((String(job.postedBy?._id || job.postedBy) === String(user._id || user.id)) || user.role === 'admin') && job.isActive !== false && (
                                             <button
                                                 onClick={() => handleCloseDrive(job._id)}
-                                                className="px-4 py-3 bg-orange-50 border border-orange-200 text-orange-600 font-bold rounded-xl hover:bg-orange-100 transition-smooth whitespace-nowrap"
+                                                className="hidden md:block px-4 py-3 bg-orange-50 border border-orange-200 text-orange-600 font-bold rounded-xl hover:bg-orange-100 transition-smooth whitespace-nowrap"
                                             >
-                                                Close Drive
+                                                Close
                                             </button>
                                         )}
                                         {((String(job.postedBy?._id || job.postedBy) === String(user._id || user.id)) || user.role === 'admin') && (
                                             <button
                                                 onClick={() => handleDeleteJob(job._id)}
-                                                className="p-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-smooth group/del"
+                                                className="p-2 md:p-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-smooth group/del flex items-center justify-center"
                                             >
-                                                <X size={20} className="text-red-500 group-hover/del:scale-110" />
+                                                <X size={16} className="text-red-500 group-hover/del:scale-110" />
                                             </button>
                                         )}
                                     </div>
@@ -318,7 +316,7 @@ const Jobs = () => {
                     ))}
                     {filteredJobs.length === 0 && (
                         <div className="col-span-full text-center py-20 glass-card">
-                            <p className="text-gray-500 font-medium text-lg">No matching opportunities found.</p>
+                            <p className="text-[var(--text-light)] font-medium text-lg opacity-60">No matching opportunities found.</p>
                         </div>
                     )}
                 </div>
@@ -327,7 +325,7 @@ const Jobs = () => {
             {/* Post Job Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-2xl premium-shadow overflow-hidden text-left">
+                    <div className="bg-[var(--surface)] rounded-3xl w-full max-w-2xl premium-shadow overflow-hidden text-left">
                         <div className="p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-[var(--primary)]">Post New Opportunity</h2>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth">
@@ -339,7 +337,7 @@ const Jobs = () => {
                                 <label className="text-sm font-bold">Company Name</label>
                                 <input
                                     required
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newJob.company}
                                     onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
                                 />
@@ -348,7 +346,7 @@ const Jobs = () => {
                                 <label className="text-sm font-bold">Job Role</label>
                                 <input
                                     required
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newJob.role}
                                     onChange={(e) => setNewJob({ ...newJob, role: e.target.value })}
                                 />
@@ -357,7 +355,7 @@ const Jobs = () => {
                                 <label className="text-sm font-bold">Location</label>
                                 <input
                                     required
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newJob.location}
                                     onChange={(e) => setNewJob({ ...newJob, location: e.target.value })}
                                 />
@@ -365,7 +363,7 @@ const Jobs = () => {
                             <div className="space-y-2">
                                 <label className="text-sm font-bold">Package (e.g. 12 LPA)</label>
                                 <input
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newJob.package}
                                     onChange={(e) => setNewJob({ ...newJob, package: e.target.value })}
                                 />
@@ -374,7 +372,7 @@ const Jobs = () => {
                                 <label className="text-sm font-bold">Deadline</label>
                                 <input
                                     required type="date"
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newJob.deadline}
                                     onChange={(e) => setNewJob({ ...newJob, deadline: e.target.value })}
                                 />
@@ -400,7 +398,7 @@ const Jobs = () => {
             {/* Applicants Modal */}
             {showApplicantsModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-2xl premium-shadow overflow-hidden text-left flex flex-col max-h-[80vh]">
+                    <div className="bg-[var(--surface)] rounded-3xl w-full max-w-2xl premium-shadow overflow-hidden text-left flex flex-col max-h-[80vh]">
                         <div className="p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-[var(--primary)]">Applications</h2>
                             <button onClick={() => setShowApplicantsModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth">
@@ -409,13 +407,13 @@ const Jobs = () => {
                         </div>
                         <div className="p-6 overflow-y-auto space-y-4">
                             {applicants.length === 0 ? (
-                                <p className="text-center py-10 text-gray-500">No applicants yet.</p>
+                                <p className="text-center py-10 text-[var(--text-light)] opacity-60">No applicants yet.</p>
                             ) : (
                                 applicants.map((applicant, idx) => (
                                     <div key={idx} className="flex items-center justify-between p-4 bg-[var(--background)] rounded-2xl border border-[var(--border)] hover:bg-[var(--surface)] transition-smooth">
                                         <div className="space-y-1">
                                             <h4 className="font-bold text-lg">{applicant.user.name}</h4>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-gray-500">
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-[var(--text-light)] opacity-70">
                                                 <span className="text-[var(--primary)]">{applicant.user.email}</span>
                                                 {applicant.branch && <span>• {applicant.branch}</span>}
                                                 {applicant.year && <span>• {applicant.year} Year</span>}
@@ -447,7 +445,7 @@ const Jobs = () => {
             {/* Premium Resume Preview Modal */}
             {showResumePreview && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col premium-shadow relative">
+                    <div className="bg-[var(--surface)] rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col premium-shadow relative">
                         <div className="p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center sticky top-0 z-10">
                             <h3 className="text-xl font-bold text-[var(--primary)]">Resume Preview</h3>
                             <button
@@ -457,7 +455,7 @@ const Jobs = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <div className="overflow-y-auto p-4 md:p-8 bg-gray-100/50 flex flex-col items-center">
+                        <div className="overflow-y-auto p-4 md:p-8 bg-[var(--background)]/50 flex flex-col items-center">
                             {selectedResumeUrl ? (
                                 <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 min-h-[600px] flex items-center justify-center relative group">
                                     <img

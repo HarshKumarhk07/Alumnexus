@@ -19,7 +19,7 @@ const AlumniDirectory = () => {
     const [requestData, setRequestData] = useState({ type: '', message: '' });
     const [showRequestModal, setShowRequestModal] = useState(false);
 
-    const branches = ['All', 'Computer Science', 'Electronics', 'Mechanical', 'Civil', 'Electrical', 'Information Technology'];
+    const branches = ['All', 'Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil', 'Electrical', 'Others'];
 
     useEffect(() => {
         fetchAlumni();
@@ -50,7 +50,9 @@ const AlumniDirectory = () => {
             a.company.toLowerCase().includes(search.toLowerCase()) ||
             a.designation.toLowerCase().includes(search.toLowerCase());
 
-        const matchesBranch = filters.branch === 'All' || checkBranch(a.branch, filters.branch);
+        const matchesBranch = filters.branch === 'All' ||
+            a.branch === filters.branch ||
+            (a.branch?.toLowerCase().includes(filters.branch.toLowerCase()));
         const matchesYear = !filters.batchYear || a.batchYear?.toString().includes(filters.batchYear);
         const matchesLocation = !filters.location || a.location?.toLowerCase().includes(filters.location.toLowerCase());
         const matchesSkill = !filters.skill || a.skills?.some(s => s.toLowerCase().includes(filters.skill.toLowerCase()));
@@ -59,7 +61,25 @@ const AlumniDirectory = () => {
     });
 
     const handleSendRequest = async (e) => {
-        // ... (existing code)
+        e.preventDefault();
+        if (!selectedAlumni || !requestData.type) return;
+
+        try {
+            setRequesting(true);
+            await profileService.createRequest({
+                receiverId: selectedAlumni.user._id || selectedAlumni.user,
+                type: requestData.type,
+                message: requestData.message
+            });
+
+            toast.success('Request sent successfully!');
+            setShowRequestModal(false);
+            setRequestData({ type: '', message: '' });
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to send request');
+        } finally {
+            setRequesting(false);
+        }
     };
 
     const handleDeleteAlumni = async (id, name) => {
@@ -100,31 +120,31 @@ const AlumniDirectory = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-12 animate-fade-in mb-20 text-left">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-12 animate-fade-in mb-20 text-left">
             {/* Header */}
             <div className="max-w-2xl">
-                <h1 className="text-5xl font-extrabold text-[var(--primary)] tracking-tight">Alumni Network</h1>
-                <p className="text-gray-600 mt-4 text-lg">
+                <h1 className="text-3xl md:text-5xl font-extrabold text-[var(--primary)] tracking-tight">Alumni Network</h1>
+                <p className="text-[var(--text-light)] mt-2 md:mt-4 text-sm md:text-lg">
                     Connect with professionals from your college who are leading industries across the globe.
                 </p>
             </div>
 
             {/* Advanced Filter Bar */}
-            <div className="glass-card p-8 border border-[var(--border)] space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="glass-card p-4 md:p-8 border border-[var(--border)] space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
                     <div className="md:col-span-2 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
                             type="text"
                             placeholder="Search by name, company, or role..."
-                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                            className="w-full pl-12 pr-4 py-3 md:py-4 bg-white border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth font-medium text-sm md:text-base"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
                     <div>
                         <select
-                            className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-gray-600"
+                            className="w-full px-4 py-3 md:py-4 bg-white border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth font-bold text-[var(--text-dark)] opacity-70 text-sm md:text-base"
                             value={filters.branch}
                             onChange={(e) => setFilters({ ...filters, branch: e.target.value })}
                         >
@@ -135,30 +155,30 @@ const AlumniDirectory = () => {
                         <input
                             type="number"
                             placeholder="Batch Year"
-                            className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold"
+                            className="w-full px-4 py-3 md:py-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth font-bold text-[var(--text-dark)] text-sm md:text-base"
                             value={filters.batchYear}
                             onChange={(e) => setFilters({ ...filters, batchYear: e.target.value })}
                         />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-2">
                     <div className="relative">
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
                             type="text"
-                            placeholder="Filter by Location (e.g. Bangalore)..."
-                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                            placeholder="Location (e.g. Bangalore)..."
+                            className="w-full pl-12 pr-4 py-3 md:py-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth font-medium text-[var(--text-dark)] text-sm md:text-base"
                             value={filters.location}
                             onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                         />
                     </div>
                     <div className="relative">
-                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
                             type="text"
-                            placeholder="Filter by Skill (e.g. React)..."
-                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] transition-smooth font-medium"
+                            placeholder="Skill (e.g. React)..."
+                            className="w-full pl-12 pr-4 py-3 md:py-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth font-medium text-[var(--text-dark)] text-sm md:text-base"
                             value={filters.skill}
                             onChange={(e) => setFilters({ ...filters, skill: e.target.value })}
                         />
@@ -172,71 +192,63 @@ const AlumniDirectory = () => {
                     {[1, 2, 3].map(i => <div key={i} className="h-80 glass-card animate-pulse border border-[var(--border)] rounded-[32px]"></div>)}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 text-left">
                     {filteredAlumni.map((item) => (
-                        <div key={item._id} className="glass-card p-5 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[32px]">
+                        <div key={item._id} className="bg-[var(--surface)] p-3 md:p-6 border border-[var(--border)] premium-shadow group hover:bg-[var(--primary)]/5 transition-smooth flex flex-col items-center text-center relative overflow-hidden rounded-[20px] md:rounded-[32px]">
                             {/* Verification Badge */}
                             {item.verificationStatus === 'approved' && (
-                                <div className="absolute top-4 right-4 text-blue-600 bg-blue-50 p-2 rounded-xl" title="Verified Alumni">
+                                <div className="absolute top-4 right-4 text-blue-600 bg-blue-50 p-1.5 md:p-2 rounded-xl scale-75 md:scale-100" title="Verified Alumni">
                                     <ShieldCheck size={20} />
                                 </div>
                             )}
 
-                            <div className="w-16 h-16 rounded-[24px] bg-[var(--accent)] border-4 border-white premium-shadow mb-3 overflow-hidden">
+                            <div className="w-10 h-10 md:w-16 md:h-16 rounded-[14px] md:rounded-[24px] bg-[var(--accent)] border-2 md:border-4 border-[var(--surface)] premium-shadow mb-1.5 md:mb-3 overflow-hidden">
                                 {item.profilePhoto && item.profilePhoto !== 'no-photo.jpg' ? (
                                     <img src={item.profilePhoto} alt={item.user.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[var(--primary)]">
+                                    <div className="w-full h-full flex items-center justify-center text-base md:text-2xl font-bold text-white">
                                         {item.user.name.charAt(0)}
                                     </div>
                                 )}
                             </div>
 
-                            <div className="space-y-1">
-                                <h3 className="text-lg font-bold text-[var(--primary)]">{item.user.name}</h3>
-                                <p className="text-[var(--primary-light)] font-bold text-sm uppercase tracking-widest">{item.designation}</p>
-                                <div className="flex items-center justify-center gap-1.5 text-gray-500 font-bold text-xs uppercase">
-                                    <Briefcase size={14} className="text-[var(--primary)]" /> {item.company}
+                            <div className="space-y-0 md:space-y-1">
+                                <h3 className="text-[11px] md:text-lg font-bold text-[var(--primary)] leading-tight line-clamp-1">{item.user.name}</h3>
+                                <p className="text-[var(--primary-light)] font-bold text-[8px] md:text-xs uppercase tracking-widest line-clamp-1">{item.designation}</p>
+                                <div className="flex items-center justify-center gap-1 text-[var(--text-light)] font-bold text-[7px] md:text-xs uppercase line-clamp-1">
+                                    <Briefcase size={10} className="text-[var(--primary)] md:hidden" />
+                                    <Briefcase size={14} className="text-[var(--primary)] hidden md:block" /> {item.company}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 w-full gap-2 mt-4">
-                                <div className="bg-white/50 p-3 rounded-2xl border border-[var(--border)]">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Branch</p>
-                                    <p className="text-xs font-bold truncate">{item.branch}</p>
+                            <div className="grid grid-cols-2 w-full gap-1 mt-2 md:mt-4">
+                                <div className="bg-[var(--background)] p-1.5 md:p-3 rounded-lg md:rounded-2xl border border-[var(--border)]">
+                                    <p className="text-[7px] md:text-[10px] text-[var(--text-light)] font-bold uppercase tracking-tight">Branch</p>
+                                    <p className="text-[8px] md:text-xs font-bold truncate text-[var(--text-dark)]">{item.branch}</p>
                                 </div>
-                                <div className="bg-white/50 p-3 rounded-2xl border border-[var(--border)]">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Class of</p>
-                                    <p className="text-xs font-bold">{item.batchYear}</p>
+                                <div className="bg-[var(--background)] p-1.5 md:p-3 rounded-lg md:rounded-2xl border border-[var(--border)]">
+                                    <p className="text-[7px] md:text-[10px] text-[var(--text-light)] font-bold uppercase tracking-tight">Class</p>
+                                    <p className="text-[8px] md:text-xs font-bold text-[var(--text-dark)]">{item.batchYear}</p>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 w-full mt-3">
+                            <div className="flex gap-1.5 w-full mt-2 md:mt-3">
                                 <button
                                     onClick={() => setSelectedAlumni(item)}
-                                    className="flex-1 py-3 bg-[var(--primary)] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[var(--primary-light)] transition-smooth shadow-lg shadow-[var(--primary)]/20"
+                                    className="flex-1 py-1.5 md:py-3 bg-[var(--primary)] text-white rounded-lg md:rounded-2xl font-bold flex items-center justify-center gap-1.5 hover:bg-[var(--primary-light)] transition-smooth shadow-lg shadow-[var(--primary)]/20 text-[9px] md:text-base"
                                 >
-                                    <UserCheck size={18} /> View Profile
+                                    <UserCheck size={12} className="md:hidden" />
+                                    <UserCheck size={18} className="hidden md:block" /> {window.innerWidth < 768 ? 'View' : 'View Profile'}
                                 </button>
                                 <a
                                     href={item.linkedin || 'https://linkedin.com'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-3 bg-white border border-[var(--border)] rounded-2xl hover:bg-[#0077b5] group/link transition-smooth"
+                                    className="p-1.5 md:p-3 bg-[var(--background)] border border-[var(--border)] rounded-lg md:rounded-2xl hover:bg-[#0077b5] group/link transition-smooth"
                                 >
-                                    <Linkedin size={18} className="text-gray-400 group-hover/link:text-white" />
+                                    <Linkedin size={12} className="text-gray-400 group-hover/link:text-white md:hidden" />
+                                    <Linkedin size={18} className="text-gray-400 group-hover/link:text-white hidden md:block" />
                                 </a>
-                                {item.portfolio && (
-                                    <a
-                                        href={item.portfolio}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-3 bg-white border border-[var(--border)] rounded-2xl hover:bg-[var(--primary)] group/link transition-smooth"
-                                        title="View Portfolio"
-                                    >
-                                        <Globe size={18} className="text-gray-400 group-hover/link:text-white" />
-                                    </a>
-                                )}
                             </div>
 
                             {item.mentorshipAvailable && (
@@ -294,7 +306,7 @@ const AlumniDirectory = () => {
             {/* Profile Detail Modal */}
             {selectedAlumni && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] flex flex-col premium-shadow overflow-hidden text-left animate-scale-in">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-2xl max-h-[90vh] flex flex-col premium-shadow overflow-hidden text-left animate-scale-in">
                         <div className="p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-[var(--primary)]">Alumni Profile</h2>
                             <button onClick={() => setSelectedAlumni(null)} className="p-2 hover:bg-gray-200 rounded-lg transition-smooth">
@@ -304,11 +316,11 @@ const AlumniDirectory = () => {
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
                             <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-                                <div className="w-32 h-32 rounded-[40px] bg-[var(--accent)] border-4 border-white premium-shadow overflow-hidden shrink-0">
+                                <div className="w-32 h-32 rounded-[40px] bg-[var(--accent)] border-4 border-[var(--surface)] premium-shadow overflow-hidden shrink-0">
                                     {selectedAlumni.profilePhoto && selectedAlumni.profilePhoto !== 'no-photo.jpg' ? (
                                         <img src={selectedAlumni.profilePhoto} alt={selectedAlumni.user.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-[var(--primary)]">
+                                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white">
                                             {selectedAlumni.user.name.charAt(0)}
                                         </div>
                                     )}
@@ -316,7 +328,7 @@ const AlumniDirectory = () => {
                                 <div className="space-y-2">
                                     <h3 className="text-3xl font-bold text-[var(--primary)]">{selectedAlumni.user.name}</h3>
                                     <p className="text-xl text-[var(--primary-light)] font-bold">{selectedAlumni.designation} at {selectedAlumni.company}</p>
-                                    <div className="flex flex-wrap items-center gap-4 text-gray-500 font-bold text-sm uppercase">
+                                    <div className="flex flex-wrap items-center gap-4 text-[var(--text-light)] font-bold text-sm uppercase">
                                         <span className="flex items-center gap-1"><MapPin size={16} /> {selectedAlumni.location || 'Not Specified'}</span>
                                         <span className="flex items-center gap-1"><GraduationCap size={16} /> Class of {selectedAlumni.batchYear}</span>
                                     </div>
@@ -325,7 +337,7 @@ const AlumniDirectory = () => {
 
                             <div className="space-y-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">About</h4>
-                                <p className="text-gray-600 leading-relaxed font-medium">
+                                <p className="text-[var(--text-light)] leading-relaxed font-medium">
                                     {selectedAlumni.bio || "No bio provided by this alumnus yet."}
                                 </p>
                             </div>
@@ -335,7 +347,7 @@ const AlumniDirectory = () => {
                                 <div className="flex flex-wrap gap-2">
                                     {selectedAlumni.skills && selectedAlumni.skills.length > 0 ? (
                                         selectedAlumni.skills.map((skill, i) => (
-                                            <span key={i} className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-600">
+                                            <span key={i} className="px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--text-light)]">
                                                 {skill}
                                             </span>
                                         ))
@@ -367,7 +379,7 @@ const AlumniDirectory = () => {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <p className="text-xs text-gray-500 leading-relaxed">{project.description}</p>
+                                                <p className="text-xs text-[var(--text-light)] opacity-70 leading-relaxed">{project.description}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -417,7 +429,7 @@ const AlumniDirectory = () => {
                                 </a>
                                 <a
                                     href={`mailto:${selectedAlumni.user.email}`}
-                                    className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 transition-smooth"
+                                    className="flex-1 py-4 bg-[var(--background)] text-[var(--text-dark)] rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[var(--accent)] hover:text-white transition-smooth"
                                 >
                                     <Mail size={20} /> Send Email
                                 </a>
@@ -430,7 +442,7 @@ const AlumniDirectory = () => {
             {/* Send Request Modal */}
             {showRequestModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-md premium-shadow overflow-hidden text-left animate-scale-in">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-md premium-shadow overflow-hidden text-left animate-scale-in">
                         <div className="p-6 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                             <h2 className="text-xl font-bold text-[var(--primary)] capitalize">Request {requestData.type.replace('-', ' ')}</h2>
                             <button onClick={() => setShowRequestModal(false)} className="p-2 hover:bg-gray-200 rounded-lg transition-smooth">
@@ -443,7 +455,7 @@ const AlumniDirectory = () => {
                                 <textarea
                                     required
                                     rows="4"
-                                    className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-white transition-smooth font-medium"
+                                    className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] rounded-2xl focus:outline-none focus:border-[var(--primary)] focus:bg-[var(--surface)] transition-smooth font-medium text-[var(--text-dark)]"
                                     placeholder="Briefly explain why you're reaching out..."
                                     value={requestData.message}
                                     onChange={(e) => setRequestData({ ...requestData, message: e.target.value })}

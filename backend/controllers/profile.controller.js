@@ -257,6 +257,8 @@ exports.uploadStudentPhoto = async (req, res) => {
 // @access  Private (Student)
 exports.createRequest = async (req, res) => {
     try {
+        console.log('[DEBUG] createRequest body:', req.body);
+        console.log('[DEBUG] createRequest user:', req.user.id);
         const { receiverId, type, message } = req.body;
 
         // Check if a pending request already exists

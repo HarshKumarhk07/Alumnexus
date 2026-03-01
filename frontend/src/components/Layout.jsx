@@ -6,7 +6,7 @@ const Layout = ({ children }) => {
     return (
         <div className="min-h-screen flex flex-col">
             <Navbar />
-            <main className="flex-1 container mx-auto px-4 py-8">
+            <main className="flex-1 py-8">
                 {children}
             </main>
             <footer className="bg-[var(--surface)] border-t border-[var(--border)] py-8 mt-auto">

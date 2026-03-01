@@ -71,163 +71,170 @@ const Navbar = () => {
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <nav className="bg-[var(--surface)] border-b border-[var(--border)] px-6 py-4 sticky top-0 z-50">
-            <div className="flex justify-between items-center max-w-7xl mx-auto">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"
-                    >
-                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
-                    <Link to="/" className="text-xl md:text-2xl font-bold text-[var(--primary)] uppercase tracking-wider">
-                        AlumNexus
-                    </Link>
-                </div>
+        <>
+            <nav className="w-full bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)] px-6 py-4 sticky top-0 z-50">
+                <div className="flex justify-between items-center max-w-7xl mx-auto">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="md:hidden p-2 hover:bg-[var(--accent)] hover:text-[var(--background)] rounded-lg transition-smooth"
+                        >
+                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        </button>
+                        <Link to="/" className="text-xl md:text-2xl font-bold text-[var(--primary)] uppercase tracking-wider">
+                            AlumNexus
+                        </Link>
+                    </div>
 
-                <div className="hidden md:flex items-center gap-8 font-medium">
-                    {user && !isAuthPage && (
-                        <>
-                            <Link to="/dashboard" className="hover:text-[var(--primary)] transition-smooth">Dashboard</Link>
-                            <Link to="/directory" className="hover:text-[var(--primary)] transition-smooth">Alumni</Link>
-                            {(user.role === 'alumni' || user.role === 'admin') && (
-                                <Link to="/students" className="hover:text-[var(--primary)] transition-smooth">Students</Link>
-                            )}
-                            <Link to="/jobs" className="hover:text-[var(--primary)] transition-smooth">Jobs</Link>
-                            <Link to="/blogs" className="hover:text-[var(--primary)] transition-smooth">Blogs</Link>
-                            <Link to="/events" className="hover:text-[var(--primary)] transition-smooth">Events</Link>
-                            <Link to="/gallery" className="hover:text-[var(--primary)] transition-smooth">Gallery</Link>
-                            <Link to="/queries" className="hover:text-[var(--primary)] transition-smooth">Queries</Link>
-                        </>
-                    )}
-                </div>
+                    <div className="hidden md:flex items-center gap-8 font-medium">
+                        {user && !isAuthPage ? (
+                            <>
+                                <Link to="/dashboard" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Dashboard</Link>
+                                <Link to="/directory" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Alumni</Link>
+                                {(user.role === 'alumni' || user.role === 'admin') && (
+                                    <Link to="/students" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Students</Link>
+                                )}
+                                <Link to="/jobs" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Jobs</Link>
+                                <Link to="/blogs" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Blogs</Link>
+                                <Link to="/events" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Events</Link>
+                                <Link to="/gallery" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Gallery</Link>
+                                <Link to="/queries" className="text-[var(--text-dark)] hover:text-[var(--primary)] transition-smooth">Queries</Link>
+                            </>
+                        ) : !isAuthPage && (
+                            <>
+                                <Link to="/" className="text-[var(--text-dark)] hover:text-[var(--accent)] transition-smooth">Home</Link>
+                                <Link to="/public-directory" className="text-[var(--text-dark)] hover:text-[var(--accent)] transition-smooth">Directory</Link>
+                            </>
+                        )}
+                    </div>
 
-                <div className="flex items-center gap-2 md:gap-4">
-                    {user && !isAuthPage ? (
-                        <>
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowNotifications(!showNotifications)}
-                                    className="p-2 hover:bg-[var(--accent)] rounded-full transition-smooth relative"
-                                >
-                                    <Bell size={20} />
-                                    {unreadCount > 0 && (
-                                        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface)]"></span>
-                                    )}
-                                </button>
+                    <div className="flex items-center gap-2 md:gap-4">
+                        {user && !isAuthPage ? (
+                            <>
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowNotifications(!showNotifications)}
+                                        className="p-2 hover:bg-[var(--accent)] hover:text-[var(--background)] rounded-full transition-smooth relative"
+                                    >
+                                        <Bell size={20} />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface)]"></span>
+                                        )}
+                                    </button>
 
-                                {showNotifications && (
-                                    <div className="absolute right-0 mt-4 w-72 md:w-80 bg-white border border-[var(--border)] rounded-2xl premium-shadow z-[60] overflow-hidden">
-                                        <div className="p-4 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
-                                            <h3 className="font-bold text-[var(--primary)]">Notifications</h3>
-                                            <button onClick={handleMarkAsRead} className="text-xs font-bold text-[var(--primary)] hover:underline">
-                                                Clear All
-                                            </button>
+                                    {showNotifications && (
+                                        <div className="fixed md:absolute inset-x-4 md:inset-auto right-auto md:right-0 mt-20 md:mt-4 md:w-80 bg-[var(--surface)] border border-[var(--border)] rounded-2xl premium-shadow z-[60] overflow-hidden">
+                                            <div className="p-4 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
+                                                <h3 className="font-bold text-[var(--primary)]">Notifications</h3>
+                                                <button onClick={handleMarkAsRead} className="text-xs font-bold text-[var(--primary)] hover:underline">
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="max-h-96 overflow-y-auto bg-[var(--surface)]">
+                                                {notifications.length === 0 ? (
+                                                    <div className="p-8 text-center text-[var(--text-light)] opacity-60 text-sm">No new notifications</div>
+                                                ) : (
+                                                    notifications.map((n, i) => (
+                                                        <div key={i} className={`p-4 border-b border-[var(--border)] last:border-0 hover:bg-[var(--background)] transition-smooth cursor-pointer ${!n.isRead ? 'bg-[var(--primary)]/10' : ''}`} onClick={() => { setSelectedNotification(n); setShowNotifications(false); }}>
+                                                            <p className="text-sm text-[var(--text-dark)] line-clamp-3">{n.message}</p>
+                                                            <p className="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-widest">
+                                                                {new Date(n.createdAt).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="max-h-96 overflow-y-auto">
-                                            {notifications.length === 0 ? (
-                                                <div className="p-8 text-center text-gray-400 text-sm">No new notifications</div>
+                                    )}
+                                </div>
+
+                                {/* User Profile Dropdown */}
+                                <div className="relative flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-[var(--border)]">
+                                    <button
+                                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                                        className="flex items-center gap-2 hover:bg-[var(--background)] p-2 rounded-xl transition-smooth"
+                                    >
+                                        <div className="text-right hidden lg:block">
+                                            <p className="text-sm font-bold text-[var(--primary)] leading-none">{user.name}</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mt-1 opacity-80">{user.role}</p>
+                                        </div>
+                                        <div className="w-10 h-10 bg-[var(--primary)] text-white rounded-xl flex items-center justify-center font-bold shadow-sm overflow-hidden shrink-0">
+                                            {userProfilePhoto ? (
+                                                <img src={userProfilePhoto} alt={user.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                notifications.map((n, i) => (
-                                                    <div key={i} className={`p-4 border-b border-gray-100 last:border-0 hover:bg-[var(--background)] transition-smooth cursor-pointer ${!n.isRead ? 'bg-blue-50/30' : ''}`} onClick={() => { setSelectedNotification(n); setShowNotifications(false); }}>
-                                                        <p className="text-sm text-gray-800 line-clamp-3">{n.message}</p>
-                                                        <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">
-                                                            {new Date(n.createdAt).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                ))
+                                                user.name.charAt(0)
                                             )}
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                        <ChevronDown size={16} className={`text-gray-400 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
 
-                            {/* User Profile Dropdown */}
-                            <div className="relative flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-[var(--border)]">
-                                <button
-                                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                                    className="flex items-center gap-2 hover:bg-[var(--background)] p-2 rounded-xl transition-smooth"
-                                >
-                                    <div className="text-right hidden lg:block">
-                                        <p className="text-sm font-bold text-[var(--primary)] leading-none">{user.name}</p>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mt-1">{user.role}</p>
-                                    </div>
-                                    <div className="w-10 h-10 bg-[var(--primary)] text-white rounded-xl flex items-center justify-center font-bold shadow-sm overflow-hidden shrink-0">
-                                        {userProfilePhoto ? (
-                                            <img src={userProfilePhoto} alt={user.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            user.name.charAt(0)
-                                        )}
-                                    </div>
-                                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {isProfileDropdownOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[var(--border)] rounded-2xl premium-shadow z-[60] overflow-hidden">
-                                        <div className="p-4 border-b border-gray-100 bg-gray-50 lg:hidden">
-                                            <p className="text-sm font-bold text-[var(--primary)]">{user.name}</p>
-                                            <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
+                                    {isProfileDropdownOpen && (
+                                        <div className="absolute right-0 top-full mt-2 w-56 bg-[var(--surface)] border border-[var(--border)] rounded-2xl premium-shadow z-[60] overflow-hidden">
+                                            <div className="p-4 border-b border-[var(--border)] bg-[var(--background)] lg:hidden">
+                                                <p className="text-sm font-bold text-[var(--primary)]">{user.name}</p>
+                                                <p className="text-xs text-gray-500 mt-1 truncate">{user.email}</p>
+                                            </div>
+                                            <div className="p-2 space-y-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsProfileDropdownOpen(false);
+                                                        setIsSettingsOpen(true);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 p-3 text-sm font-bold text-[var(--text-dark)] hover:text-[var(--primary)] hover:bg-[var(--background)] rounded-xl transition-smooth"
+                                                >
+                                                    <Settings size={18} /> Settings
+                                                </button>
+                                                <button
+                                                    onClick={logout}
+                                                    className="w-full flex items-center gap-3 p-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-smooth"
+                                                >
+                                                    <LogOut size={18} /> Logout
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="p-2 space-y-1">
-                                            <button
-                                                onClick={() => {
-                                                    setIsProfileDropdownOpen(false);
-                                                    setIsSettingsOpen(true);
-                                                }}
-                                                className="w-full flex items-center gap-3 p-3 text-sm font-bold text-gray-600 hover:text-[var(--primary)] hover:bg-[var(--background)] rounded-xl transition-smooth"
-                                            >
-                                                <Settings size={18} /> Settings
-                                            </button>
-                                            <button
-                                                onClick={logout}
-                                                className="w-full flex items-center gap-3 p-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-smooth"
-                                            >
-                                                <LogOut size={18} /> Logout
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-2 md:gap-4">
+                                <Link to="/login" className="px-2 md:px-4 py-1.5 md:py-2 hover:text-[var(--primary)] transition-smooth font-medium text-xs md:text-base whitespace-nowrap">Login</Link>
+                                <Link to="/register" style={{ color: 'white' }} className="px-3 md:px-6 py-1.5 md:py-2 bg-[var(--primary)] text-white rounded-xl premium-shadow hover:scale-105 transition-smooth font-bold text-xs md:text-base whitespace-nowrap">
+                                    Join Now
+                                </Link>
                             </div>
-                        </>
-                    ) : (
-                        <div className="flex items-center gap-2 md:gap-4">
-                            <Link to="/login" className="px-2 md:px-4 py-1.5 md:py-2 hover:text-[var(--primary)] transition-smooth font-medium text-xs md:text-base whitespace-nowrap">Login</Link>
-                            <Link to="/register" className="px-3 md:px-6 py-1.5 md:py-2 bg-[var(--primary)] text-[var(--text-light)] rounded-xl premium-shadow hover:scale-105 transition-smooth font-bold text-xs md:text-base whitespace-nowrap">
-                                Join Now
-                            </Link>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            {/* Mobile Menu Overlay */}
-            {isMenuOpen && (
-                <div className="md:hidden absolute top-full left-0 w-full bg-[var(--surface)] border-b border-[var(--border)] premium-shadow animate-fade-in py-6 px-6 space-y-4">
-                    {user ? (
-                        <div className="flex flex-col gap-4">
-                            <div className="pb-4 border-b border-[var(--border)] lg:hidden">
-                                <p className="font-bold text-[var(--primary)]">{user.name}</p>
-                                <p className="text-xs text-gray-600 capitalize">{user.role}</p>
+                {/* Mobile Menu Overlay */}
+                {isMenuOpen && (
+                    <div className="md:hidden absolute top-full left-0 w-full bg-[var(--surface)] border-b border-[var(--border)] premium-shadow animate-fade-in py-6 px-6 space-y-4">
+                        {user ? (
+                            <div className="flex flex-col gap-4">
+                                <div className="pb-4 border-b border-[var(--border)] lg:hidden">
+                                    <p className="font-bold text-[var(--primary)]">{user.name}</p>
+                                    <p className="text-xs text-gray-600 capitalize">{user.role}</p>
+                                </div>
+                                <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Dashboard</Link>
+                                <Link to="/directory" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Alumni</Link>
+                                {(user.role === 'alumni' || user.role === 'admin') && (
+                                    <Link to="/students" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Students</Link>
+                                )}
+                                <Link to="/jobs" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Jobs</Link>
+                                <Link to="/blogs" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Blogs</Link>
+                                <Link to="/events" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Events</Link>
+                                <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Gallery</Link>
+                                <Link to="/queries" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Queries</Link>
                             </div>
-                            <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Dashboard</Link>
-                            <Link to="/directory" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Alumni</Link>
-                            {(user.role === 'alumni' || user.role === 'admin') && (
-                                <Link to="/students" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Students</Link>
-                            )}
-                            <Link to="/jobs" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Jobs</Link>
-                            <Link to="/blogs" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Blogs</Link>
-                            <Link to="/events" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Events</Link>
-                            <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Gallery</Link>
-                            <Link to="/queries" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium hover:text-[var(--primary)] transition-smooth">Queries</Link>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center font-bold text-[var(--primary)] border border-[var(--primary)] rounded-xl">Login</Link>
-                            <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center font-bold bg-[var(--primary)] text-white rounded-xl">Join Now</Link>
-                        </div>
-                    )}
-                </div>
-            )}
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center font-bold text-[var(--primary)] border border-[var(--primary)] rounded-xl">Login</Link>
+                                <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center font-bold bg-[var(--primary)] text-white rounded-xl">Join Now</Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </nav>
 
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
             <NotificationModal
@@ -235,7 +242,7 @@ const Navbar = () => {
                 onClose={() => setSelectedNotification(null)}
                 notification={selectedNotification}
             />
-        </nav>
+        </>
     );
 };
 

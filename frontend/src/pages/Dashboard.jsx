@@ -65,6 +65,20 @@ const Dashboard = () => {
     const [pendingAlumni, setPendingAlumni] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Admin Spotlight State
+    const [showSpotlightModal, setShowSpotlightModal] = useState(false);
+    const [spotlightData, setSpotlightData] = useState({
+        title: '',
+        description: '',
+        quote: '',
+        authorName: '',
+        authorRole: '',
+        isPublished: true
+    });
+    const [spotlightImage, setSpotlightImage] = useState(null);
+    const [spotlightPreview, setSpotlightPreview] = useState(null);
+    const [isUpdatingSpotlight, setIsUpdatingSpotlight] = useState(false);
+
     useEffect(() => {
         fetchDashboardData();
     }, [user]);
@@ -202,10 +216,35 @@ const Dashboard = () => {
             setEngagementPost({ title: '', content: '', category: 'General', targetRole: 'all' });
             setEngagementImage(null);
             setImagePreview(null);
+            fetchDashboardData();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to post engagement content');
+            toast.error('Failed to post engagement');
         } finally {
             setIsPostingEngagement(false);
+        }
+    };
+
+    const handleUpdateSpotlight = async (e) => {
+        e.preventDefault();
+        setIsUpdatingSpotlight(true);
+        try {
+            const formData = new FormData();
+            formData.append('title', spotlightData.title);
+            formData.append('description', spotlightData.description);
+            formData.append('quote', spotlightData.quote);
+            formData.append('authorName', spotlightData.authorName);
+            formData.append('authorRole', spotlightData.authorRole);
+            formData.append('isPublished', spotlightData.isPublished);
+            if (spotlightImage) formData.append('image', spotlightImage);
+
+            await adminService.updateSpotlight(formData);
+            toast.success('Spotlight story updated successfully!');
+            setShowSpotlightModal(false);
+            fetchDashboardData();
+        } catch (error) {
+            toast.error('Failed to update spotlight');
+        } finally {
+            setIsUpdatingSpotlight(false);
         }
     };
 
@@ -382,7 +421,7 @@ const Dashboard = () => {
     if (loading) return <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div></div>;
 
     return (
-        <div className="space-y-10 animate-fade-in mb-20">
+        <div className="px-4 md:px-6 space-y-10 animate-fade-in mb-20 text-left">
             <section className="w-[100vw] relative left-[50%] right-[50%] -ml-[50vw] -mr-[50vw] px-4 md:px-8 mb-8">
                 <ImageSlider />
             </section>
@@ -391,17 +430,25 @@ const Dashboard = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h1 className="text-xl md:text-4xl font-bold text-[var(--primary)]">Hello, {user?.name}! 👋</h1>
-                    <p className="text-sm md:text-base text-gray-600 mt-1">Here's the AlumNexus overview for today.</p>
+                    <p className="text-sm md:text-base text-[var(--text-dark)] opacity-70 mt-1">Here's the AlumNexus overview for today.</p>
                 </div>
                 <div className="flex flex-wrap gap-3 md:gap-4 w-full md:w-auto">
                     {user.role === 'admin' ? (
-                        <button onClick={handleExport} className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold hover:bg-[var(--accent)] transition-smooth flex items-center justify-center gap-2 text-sm md:text-base">
+                        <button onClick={handleExport} className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold hover:bg-[var(--background)] transition-smooth flex items-center justify-center gap-2 text-sm md:text-base">
                             <Download size={18} /> <span className="hidden sm:inline">Export Data</span><span className="sm:hidden">Export</span>
                         </button>
                     ) : (
-                        <Link to="/directory" className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold hover:bg-[var(--accent)] transition-smooth flex items-center justify-center gap-2 text-sm md:text-base">
+                        <Link to="/directory" className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold hover:bg-[var(--background)] transition-smooth flex items-center justify-center gap-2 text-sm md:text-base">
                             <Users size={18} /> <span className="hidden sm:inline">My Network</span><span className="sm:hidden">Network</span>
                         </Link>
+                    )}
+                    {user.role === 'admin' && (
+                        <button
+                            onClick={() => setShowSpotlightModal(true)}
+                            className="flex-1 md:flex-initial px-4 md:px-6 py-3 bg-[var(--primary)] text-white rounded-xl font-bold hover:scale-105 transition-smooth flex items-center justify-center gap-2 text-sm md:text-base"
+                        >
+                            <Star size={18} /> <span className="hidden sm:inline">Manage Spotlight</span><span className="sm:hidden">Spotlight</span>
+                        </button>
                     )}
                 </div>
             </div>
@@ -430,14 +477,14 @@ const Dashboard = () => {
                 <div className="lg:col-span-2 space-y-8">
                     {user.role === 'admin' && pendingAlumni.length > 0 && (
                         <div className="space-y-4">
-                            <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2">
-                                <Clock size={24} /> Alumni Verification Requests
+                            <h2 className="text-2xl font-bold text-[var(--text-dark)] flex items-center gap-2">
+                                <Clock size={24} className="text-[var(--accent)]" /> Alumni Verification Requests
                             </h2>
                             <div className="space-y-3">
                                 {pendingAlumni.map((alumni) => (
                                     <div key={alumni._id} className="glass-card p-5 border border-[var(--border)] flex justify-between items-center group hover:bg-[var(--surface)] transition-smooth">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-[var(--accent)] rounded-xl premium-shadow overflow-hidden flex items-center justify-center font-bold text-[var(--primary)] shrink-0">
+                                            <div className="w-12 h-12 bg-[var(--accent)] rounded-xl premium-shadow overflow-hidden flex items-center justify-center font-bold text-white shrink-0">
                                                 {alumni.profilePhoto && alumni.profilePhoto !== 'no-photo.jpg' ? (
                                                     <img src={alumni.profilePhoto} alt={alumni.user.name} className="w-full h-full object-cover" />
                                                 ) : (
@@ -445,9 +492,9 @@ const Dashboard = () => {
                                                 )}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold">{alumni.user.name}</h4>
-                                                <p className="text-sm text-gray-500">{alumni.branch} • Class of {alumni.batchYear}</p>
-                                                <p className="text-xs text-[var(--primary)] font-medium">{alumni.company} - {alumni.designation}</p>
+                                                <h4 className="font-bold text-[var(--text-dark)]">{alumni.user.name}</h4>
+                                                <p className="text-sm text-[var(--text-light)] opacity-80">{alumni.branch} • Class of {alumni.batchYear}</p>
+                                                <p className="text-xs text-[var(--primary-light)] font-medium">{alumni.company} - {alumni.designation}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -466,7 +513,7 @@ const Dashboard = () => {
 
                     <div className="space-y-4">
                         <div className="flex justify-between items-center px-2">
-                            <h2 className="text-2xl font-bold text-[var(--primary)]">
+                            <h2 className="text-2xl font-bold text-[var(--text-dark)]">
                                 {user.role === 'admin' ? 'Recent Global Activity' : 'Recent Opportunities'}
                             </h2>
                             <Link to="/jobs" className="text-sm font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
@@ -478,12 +525,12 @@ const Dashboard = () => {
                             {(user.role === 'admin' ? recentJobs : recentJobs).map((job, i) => (
                                 <Link to="/jobs" key={i} className="glass-card p-5 border border-[var(--border)] flex justify-between items-center group cursor-pointer hover:bg-[var(--primary)] transition-smooth block">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-[var(--accent)] rounded-xl flex items-center justify-center font-bold text-[var(--primary)] group-hover:bg-white transition-smooth">
+                                        <div className="w-12 h-12 bg-[var(--accent)] rounded-xl flex items-center justify-center font-bold text-white group-hover:bg-white group-hover:text-[var(--primary)] transition-smooth">
                                             {job.company?.charAt(0) || 'J'}
                                         </div>
                                         <div>
-                                            <h4 className="font-bold group-hover:text-white transition-smooth">{job.role}</h4>
-                                            <p className="text-sm text-gray-500 group-hover:text-white/80 transition-smooth">{job.company} • {job.location}</p>
+                                            <h4 className="font-bold text-[var(--text-dark)] group-hover:text-white transition-smooth">{job.role}</h4>
+                                            <p className="text-sm text-[var(--text-light)] opacity-70 group-hover:text-white/80 transition-smooth">{job.company} • {job.location}</p>
                                         </div>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
@@ -500,7 +547,7 @@ const Dashboard = () => {
 
                     <div className="space-y-4 pt-10">
                         <div className="flex justify-between items-center px-2">
-                            <h2 className="text-2xl font-bold text-[var(--primary)]">Recent Insights</h2>
+                            <h2 className="text-2xl font-bold text-[var(--text-dark)]">Recent Insights</h2>
                             <Link to="/blogs" className="text-sm font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
                                 View All <ArrowUpRight size={14} />
                             </Link>
@@ -578,8 +625,8 @@ const Dashboard = () => {
                             </div>
 
                             {requests.length === 0 ? (
-                                <div className="p-16 text-center glass-card border-2 border-dashed border-[var(--border)] rounded-[32px] animate-fade-in">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-300">
+                                <div className="p-16 text-center bg-[var(--surface)] border-2 border-dashed border-[var(--border)] rounded-[32px] animate-fade-in">
+                                    <div className="w-16 h-16 bg-[var(--background)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-[var(--primary)]/40">
                                         <Clock size={32} />
                                     </div>
                                     <h3 className="text-lg font-bold text-gray-500 mb-2">No active requests</h3>
@@ -612,7 +659,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Sidebar Widgets */}
-                <div className="space-y-8">
+                <div className="space-y-8 px-4 md:px-0">
                     {/* Active Polls Widget */}
                     {activeSurveys.length > 0 && (
                         <div className="glass-card p-6 border border-[var(--border)] space-y-4">
@@ -652,7 +699,7 @@ const Dashboard = () => {
                                                     <button
                                                         key={opt._id}
                                                         onClick={() => handleVoteSurvey(poll._id, opt._id)}
-                                                        className="w-full text-left px-4 py-2 bg-white border border-[var(--border)] rounded-xl text-sm font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-smooth"
+                                                        className="w-full text-left px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--text-dark)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-smooth"
                                                     >
                                                         {opt.text}
                                                     </button>
@@ -668,7 +715,7 @@ const Dashboard = () => {
                                                     {poll.options.map(opt => {
                                                         const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0;
                                                         return (
-                                                            <div key={'res_' + opt._id} className="text-xs text-gray-600 flex justify-between items-center bg-gray-50 px-2 py-1.5 rounded-lg border border-[var(--border)] relative overflow-hidden">
+                                                            <div key={'res_' + opt._id} className="text-xs text-[var(--text-dark)] flex justify-between items-center bg-[var(--background)] px-2 py-1.5 rounded-lg border border-[var(--border)] relative overflow-hidden">
                                                                 <div className="absolute left-0 top-0 bottom-0 bg-[var(--primary)] opacity-10" style={{ width: `${pct}%` }}></div>
                                                                 <span className="relative z-10 w-2/3 truncate pr-2">{opt.text}</span>
                                                                 <span className="relative z-10 font-bold w-1/3 text-right">{opt.votes} ({pct}%)</span>
@@ -699,14 +746,14 @@ const Dashboard = () => {
                         </div>
                         <button
                             onClick={() => notificationService.markAsRead().then(fetchDashboardData)}
-                            className="w-full py-3 bg-[var(--surface)] text-[var(--primary)] font-bold rounded-xl text-sm border border-[var(--border)] hover:bg-[var(--accent)] transition-smooth"
+                            className="w-full py-3 bg-[var(--surface)] text-[var(--primary)] font-bold rounded-xl text-sm border border-[var(--border)] hover:bg-[var(--accent)] hover:text-white transition-smooth"
                         >
                             Mark all as read
                         </button>
                     </div>
 
                     {user?.role === 'admin' && (
-                        <div className="glass-card p-6 border border-[var(--border)] bg-[var(--primary)] text-white premium-shadow">
+                        <div className="dark-card p-6 border border-[var(--border)] premium-shadow">
                             <h3 className="text-xl font-bold mb-4">Content Studio</h3>
                             <div className="grid grid-cols-1 gap-3">
                                 <button onClick={() => setShowAnnouncementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
@@ -740,15 +787,15 @@ const Dashboard = () => {
             {
                 showAnnouncementModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in">
+                        <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                             <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                                 <h2 className="text-2xl font-bold text-[var(--primary)]">Post Announcement</h2>
                                 <button onClick={() => setShowAnnouncementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                             </div>
-                            <form onSubmit={handlePostAnnouncement} className="p-8 space-y-6">
+                            <form onSubmit={handlePostAnnouncement} className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">Message</label>
-                                    <textarea required rows="4" className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none"
+                                    <textarea required rows="4" className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none text-[var(--text-dark)]"
                                         placeholder="Write your announcement here..."
                                         value={announcement.message}
                                         onChange={(e) => setAnnouncement({ ...announcement, message: e.target.value })}
@@ -769,7 +816,7 @@ const Dashboard = () => {
                                                 className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center
                                                 ${announcement.targetRole === value
                                                         ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)]'}`}
+                                                        : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)]'}`}
                                             >
                                                 {label}
                                             </button>
@@ -792,11 +839,11 @@ const Dashboard = () => {
             {/* Engagement Post Modal */}
             {showEngagementModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                         <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
                             <div>
                                 <h2 className="text-2xl font-bold text-[var(--primary)]">Post Engagement Content</h2>
-                                <p className="text-sm text-gray-500 mt-1">Will appear on the community blog feed</p>
+                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Will appear on the community blog feed</p>
                             </div>
                             <button onClick={() => setShowEngagementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                         </div>
@@ -807,7 +854,7 @@ const Dashboard = () => {
                                     required
                                     type="text"
                                     placeholder="Enter a catchy title..."
-                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
                                     value={engagementPost.title}
                                     onChange={(e) => setEngagementPost({ ...engagementPost, title: e.target.value })}
                                 />
@@ -816,7 +863,7 @@ const Dashboard = () => {
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">Category</label>
                                     <select
-                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
                                         value={engagementPost.category}
                                         onChange={(e) => setEngagementPost({ ...engagementPost, category: e.target.value })}
                                     >
@@ -828,7 +875,7 @@ const Dashboard = () => {
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">Audience</label>
                                     <select
-                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
                                         value={engagementPost.targetRole}
                                         onChange={(e) => setEngagementPost({ ...engagementPost, targetRole: e.target.value })}
                                     >
@@ -843,7 +890,7 @@ const Dashboard = () => {
                                 <textarea
                                     required
                                     rows="5"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium text-[var(--text-dark)]"
                                     placeholder="Write your post content here..."
                                     value={engagementPost.content}
                                     onChange={(e) => setEngagementPost({ ...engagementPost, content: e.target.value })}
@@ -864,10 +911,10 @@ const Dashboard = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    <label className="flex flex-col items-center justify-center w-full h-28 bg-gray-50 border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:bg-[var(--accent)] transition-smooth group">
+                                    <label className="flex flex-col items-center justify-center w-full h-28 bg-[var(--background)] border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:bg-[var(--accent)] transition-smooth group">
                                         <Upload size={22} className="text-gray-400 group-hover:text-[var(--primary)] mb-1 transition-smooth" />
                                         <span className="text-xs text-gray-400 group-hover:text-[var(--primary)] font-medium transition-smooth">Click to upload image</span>
-                                        <span className="text-[11px] text-gray-300">JPG, PNG, WEBP — max 5MB</span>
+                                        <span className="text-[11px] text-gray-400 opacity-50">JPG, PNG, WEBP — max 5MB</span>
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -902,11 +949,11 @@ const Dashboard = () => {
             {/* Newsletter Modal */}
             {showNewsletterModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                         <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
                             <div>
                                 <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><Newspaper size={22} /> Send Newsletter</h2>
-                                <p className="text-sm text-gray-500 mt-1">Delivered as an in-app notification</p>
+                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Delivered as an in-app notification</p>
                             </div>
                             <button onClick={() => setShowNewsletterModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                         </div>
@@ -914,7 +961,7 @@ const Dashboard = () => {
                             <div className="space-y-2">
                                 <label className="text-sm font-bold">Subject / Headline</label>
                                 <input required type="text" placeholder="e.g. Monthly Alumni Update — February 2026"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
                                     value={newsletter.subject}
                                     onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
                                 />
@@ -922,7 +969,7 @@ const Dashboard = () => {
                             <div className="space-y-2">
                                 <label className="text-sm font-bold">Body</label>
                                 <textarea required rows="5" placeholder="Write the newsletter content here..."
-                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium text-[var(--text-dark)]"
                                     value={newsletter.body}
                                     onChange={(e) => setNewsletter({ ...newsletter, body: e.target.value })}
                                 />
@@ -933,7 +980,7 @@ const Dashboard = () => {
                                     {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
                                         <button key={value} type="button"
                                             onClick={() => setNewsletter({ ...newsletter, targetRole: value })}
-                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${newsletter.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${newsletter.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
                                         >{label}</button>
                                     ))}
                                 </div>
@@ -950,11 +997,11 @@ const Dashboard = () => {
             {/* Event Invitation / Reminder Modal */}
             {showEventModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                         <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
                             <div>
                                 <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><CalendarDays size={22} /> {eventData.isReminder ? 'Event Reminder' : 'Event Invitation'}</h2>
-                                <p className="text-sm text-gray-500 mt-1">Sent as an in-app notification to selected audience</p>
+                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Sent as an in-app notification to selected audience</p>
                             </div>
                             <button onClick={() => setShowEventModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                         </div>
@@ -964,7 +1011,7 @@ const Dashboard = () => {
                                 {[{ val: false, label: '🎉 Invitation' }, { val: true, label: '🔔 Reminder' }].map(({ val, label }) => (
                                     <button key={String(val)} type="button"
                                         onClick={() => setEventData({ ...eventData, isReminder: val })}
-                                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-smooth ${eventData.isReminder === val ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-smooth ${eventData.isReminder === val ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
                                     >{label}</button>
                                 ))}
                             </div>
@@ -983,7 +1030,7 @@ const Dashboard = () => {
                                 ) : (
                                     <select
                                         required
-                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
                                         value={eventData.selectedEventId}
                                         onChange={(e) => setEventData({ ...eventData, selectedEventId: e.target.value })}
                                     >
@@ -1020,7 +1067,7 @@ const Dashboard = () => {
                                     {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
                                         <button key={value} type="button"
                                             onClick={() => setEventData({ ...eventData, targetRole: value, specificUser: '' })}
-                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${eventData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${eventData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
                                         >{label}</button>
                                     ))}
                                 </div>
@@ -1028,9 +1075,9 @@ const Dashboard = () => {
                             {/* Individual Alumni Dropdown */}
                             {eventData.targetRole === 'alumni' && (
                                 <div className="space-y-2 animate-fade-in">
-                                    <label className="text-sm font-bold text-gray-700">Select Specific Alumni (Optional)</label>
+                                    <label className="text-sm font-bold text-[var(--text-dark)]/80">Select Specific Alumni (Optional)</label>
                                     <select
-                                        className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] text-sm font-medium"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] text-sm font-medium text-[var(--text-dark)]"
                                         value={eventData.specificUser}
                                         onChange={(e) => setEventData({ ...eventData, specificUser: e.target.value })}
                                     >
@@ -1055,11 +1102,11 @@ const Dashboard = () => {
             {/* Post Poll / Survey Modal */}
             {showSurveyModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                         <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
                             <div>
                                 <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><BarChart2 size={22} /> Post Poll / Survey</h2>
-                                <p className="text-sm text-gray-500 mt-1">Users can vote on their dashboard</p>
+                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Users can vote on their dashboard</p>
                             </div>
                             <button onClick={() => setShowSurveyModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                         </div>
@@ -1067,7 +1114,7 @@ const Dashboard = () => {
                             <div className="space-y-2">
                                 <label className="text-sm font-bold">Question</label>
                                 <input required type="text" placeholder="e.g. What should be the theme for the next meetup?"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium text-lg"
+                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-lg text-[var(--text-dark)]"
                                     value={surveyData.question}
                                     onChange={(e) => setSurveyData({ ...surveyData, question: e.target.value })}
                                 />
@@ -1085,9 +1132,9 @@ const Dashboard = () => {
                                 </label>
                                 {surveyData.options.map((opt, idx) => (
                                     <div key={idx} className="flex gap-2 items-center relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-gray-300 pointer-events-none"></div>
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-[var(--border)] pointer-events-none"></div>
                                         <input required type="text" placeholder={`Option ${idx + 1}`}
-                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none font-medium"
+                                            className="w-full pl-10 pr-4 py-2.5 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
                                             value={opt}
                                             onChange={(e) => {
                                                 const newOps = [...surveyData.options];
@@ -1111,7 +1158,7 @@ const Dashboard = () => {
                                     {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
                                         <button key={value} type="button"
                                             onClick={() => setSurveyData({ ...surveyData, targetRole: value })}
-                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${surveyData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-white text-gray-500 border-gray-200 hover:border-[var(--primary)]'}`}
+                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${surveyData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
                                         >{label}</button>
                                     ))}
                                 </div>
@@ -1128,12 +1175,12 @@ const Dashboard = () => {
             {
                 showUsersModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-[32px] w-full max-w-2xl premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[80vh]">
+                        <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-2xl premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                             <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
                                 <h2 className="text-2xl font-bold text-[var(--primary)] capitalize">Total {modalRole}s</h2>
                                 <button onClick={() => setShowUsersModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                             </div>
-                            <div className="p-6 overflow-y-auto custom-scrollbar bg-gray-50/50">
+                            <div className="p-6 overflow-y-auto custom-scrollbar bg-[var(--background)]/50">
                                 {loadingUsers ? (
                                     <div className="flex justify-center flex-col items-center gap-4 py-16">
                                         <div className="w-10 h-10 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
@@ -1142,8 +1189,8 @@ const Dashboard = () => {
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {modalUsers.map(u => (
-                                            <div key={u._id} className="p-4 bg-white border border-[var(--border)] rounded-2xl flex items-center gap-4 hover:border-[var(--primary)] hover:shadow-lg transition-smooth group cursor-pointer">
-                                                <div className="w-12 h-12 rounded-xl bg-[var(--accent)] overflow-hidden font-bold text-[var(--primary)] text-xl flex items-center justify-center group-hover:scale-110 transition-smooth shrink-0">
+                                            <div key={u._id} className="p-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl flex items-center gap-4 hover:border-[var(--primary)] hover:shadow-lg transition-smooth group cursor-pointer">
+                                                <div className="w-12 h-12 rounded-xl bg-[var(--accent)] overflow-hidden font-bold text-white text-xl flex items-center justify-center group-hover:scale-110 transition-smooth shrink-0">
                                                     {u.profilePhoto && u.profilePhoto !== 'no-photo.jpg' ? (
                                                         <img src={u.profilePhoto} alt={u.name} className="w-full h-full object-cover" />
                                                     ) : (
@@ -1212,6 +1259,129 @@ const Dashboard = () => {
                 onClose={() => setSelectedNotification(null)}
                 notification={selectedNotification}
             />
+
+            {/* Spotlight Modal */}
+            {showSpotlightModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+                    <div className="bg-[var(--surface)] rounded-[32px] max-w-2xl w-full premium-shadow relative my-8 flex flex-col max-h-[90vh] overflow-hidden">
+                        <button onClick={() => setShowSpotlightModal(false)} className="absolute top-6 right-6 p-2 hover:bg-[var(--background)] rounded-full transition-smooth z-10">
+                            <X size={24} className="text-[var(--text-light)]/60" />
+                        </button>
+
+                        <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
+                            <div className="text-center space-y-4 mb-8">
+                                <div className="w-16 h-16 bg-[var(--background)] text-[var(--primary)] rounded-2xl flex items-center justify-center mx-auto border border-[var(--border)]">
+                                    <Star size={32} />
+                                </div>
+                                <h2 className="text-3xl font-black text-[var(--primary)]">Manage Spotlight Story</h2>
+                                <p className="text-[var(--text-light)]/70 font-medium">This story will be featured prominently on the landing page.</p>
+                            </div>
+
+                            <form onSubmit={handleUpdateSpotlight} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Featured Title</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={spotlightData.title}
+                                            onChange={(e) => setSpotlightData({ ...spotlightData, title: e.target.value })}
+                                            placeholder="e.g. From Campus Lead to CTO"
+                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Author Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={spotlightData.authorName}
+                                            onChange={(e) => setSpotlightData({ ...spotlightData, authorName: e.target.value })}
+                                            placeholder="e.g. Sarah Johnson"
+                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Author Role/Subtitle</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={spotlightData.authorRole}
+                                        onChange={(e) => setSpotlightData({ ...spotlightData, authorRole: e.target.value })}
+                                        placeholder="e.g. CTO at TechFlow, Class of 2018"
+                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Impactful Quote</label>
+                                    <textarea
+                                        required
+                                        value={spotlightData.quote}
+                                        onChange={(e) => setSpotlightData({ ...spotlightData, quote: e.target.value })}
+                                        placeholder="A powerful one-liner..."
+                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                        rows="2"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Brief Description</label>
+                                    <textarea
+                                        required
+                                        value={spotlightData.description}
+                                        onChange={(e) => setSpotlightData({ ...spotlightData, description: e.target.value })}
+                                        placeholder="Elaborate on their journey..."
+                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                        rows="3"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Cover Image</label>
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-24 h-24 rounded-2xl bg-[var(--background)] border-2 border-dashed border-[var(--border)] overflow-hidden flex items-center justify-center shrink-0">
+                                            {spotlightPreview ? (
+                                                <img src={spotlightPreview} className="w-full h-full object-cover" alt="Preview" />
+                                            ) : (
+                                                <ImageIcon className="text-[var(--text-light)]/30" size={32} />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                id="spotlight-image"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        setSpotlightImage(file);
+                                                        setSpotlightPreview(URL.createObjectURL(file));
+                                                    }
+                                                }}
+                                            />
+                                            <label htmlFor="spotlight-image" className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--background)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold cursor-pointer hover:bg-[var(--accent)] transition-smooth text-sm">
+                                                <Upload size={18} /> Upload Story Image
+                                            </label>
+                                            <p className="text-[10px] text-[var(--text-light)]/40 font-medium">Recommended: High resolution. Max 5MB.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    disabled={isUpdatingSpotlight}
+                                    className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-lg hover:scale-[1.02] transition-smooth disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20"
+                                >
+                                    {isUpdatingSpotlight ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Update Landing Page Spotlight
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
@@ -1219,15 +1389,15 @@ const Dashboard = () => {
 const StatCard = ({ label, value, icon: Icon, trend, color, to, onClick }) => {
     const Component = to ? Link : (onClick ? 'button' : 'div');
     return (
-        <Component to={to} onClick={onClick} className={`text-left w-full glass-card p-4 md:p-6 border border-[var(--border)] premium-shadow group hover:bg-[var(--surface)] transition-smooth ${to || onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}>
+        <Component to={to} onClick={onClick} className={`text-left w-full bg-[var(--surface)] p-4 md:p-6 border border-[var(--border)] rounded-2xl premium-shadow group hover:bg-[var(--primary)] transition-smooth ${to || onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}>
             <div className="flex justify-between items-start mb-4">
-                <div className="p-2 md:p-3 bg-[var(--background)] text-[var(--primary)] rounded-xl group-hover:bg-white transition-smooth">
+                <div className="p-2 md:p-3 bg-[var(--background)] text-[var(--primary)] rounded-xl group-hover:bg-white group-hover:text-[var(--primary)] transition-smooth">
                     <Icon size={20} className="md:w-6 md:h-6" />
                 </div>
-                {trend && <span className={`text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full ${color || 'text-green-600 bg-green-50'}`}>{trend}</span>}
+                {trend && <span className={`text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full ${color || 'text-amber-400 bg-amber-500/10 border border-amber-500/20'} group-hover:bg-white/20 group-hover:text-white transition-smooth`}>{trend}</span>}
             </div>
-            <h3 className="text-xl md:text-3xl font-bold text-[var(--primary)]">{value}</h3>
-            <p className="text-gray-500 text-xs md:text-sm font-medium">{label}</p>
+            <h3 className="text-xl md:text-3xl font-bold text-[var(--text-dark)] group-hover:text-white transition-smooth">{value}</h3>
+            <p className="text-[var(--text-light)] text-xs md:text-sm font-medium opacity-60 group-hover:text-white/80 transition-smooth">{label}</p>
         </Component>
     );
 };
@@ -1255,13 +1425,13 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
     const StatusIcon = typeIcons[request.type] || MessageCircle;
 
     const statusColors = {
-        pending: 'text-yellow-600 bg-yellow-50 border-yellow-100',
-        accepted: 'text-green-600 bg-green-50 border-green-100',
-        rejected: 'text-red-600 bg-red-50 border-red-100'
+        pending: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+        accepted: 'text-green-400 bg-green-500/10 border-green-500/20',
+        rejected: 'text-red-400 bg-red-500/10 border-red-500/20'
     };
 
     return (
-        <div className="glass-card p-6 border border-[var(--border)] premium-shadow hover:scale-[1.01] transition-smooth group animate-fade-in text-left">
+        <div className="bg-[var(--surface)] p-6 border border-[var(--border)] rounded-3xl premium-shadow hover:scale-[1.01] transition-smooth group animate-fade-in text-left">
             <div className="flex justify-between items-start mb-4">
                 <div className="flex gap-4 items-center">
                     <div className="p-3 bg-[var(--surface)] text-[var(--primary)] rounded-xl group-hover:bg-white transition-smooth">
@@ -1269,8 +1439,8 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
                     </div>
                     <div className="overflow-hidden text-left">
                         <h4 className="font-bold text-[var(--primary)] capitalize truncate">{request.type.replace('-', ' ')}</h4>
-                        <p className="text-xs text-gray-500 font-medium truncate">
-                            {isSent ? 'To' : 'From'}: <span className="text-[var(--primary)]">{otherUser?.name || 'Unknown'}</span>
+                        <p className="text-xs text-[var(--text-dark)] opacity-60 font-medium truncate">
+                            {isSent ? 'To' : 'From'}: <span className="text-[var(--primary)] font-bold">{otherUser?.name || 'Unknown'}</span>
                         </p>
                     </div>
                 </div>
@@ -1279,8 +1449,8 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
                 </span>
             </div>
 
-            <div className="mb-4 p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm italic text-gray-600">"{request.message}"</p>
+            <div className="mb-4 p-4 bg-[var(--background)] rounded-xl">
+                <p className="text-sm italic text-[var(--text-light)]">"{request.message}"</p>
             </div>
 
             {request.response && (
@@ -1288,7 +1458,7 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
                     <p className="text-[10px] font-bold text-[var(--primary)] uppercase mb-1">Response:</p>
                     {!showResponseInput ? (
                         <>
-                            <p className="text-sm text-gray-700">{request.response}</p>
+                            <p className="text-sm text-[var(--text-dark)]">{request.response}</p>
                             {!isSent && (
                                 <button
                                     onClick={() => setShowResponseInput(true)}
@@ -1321,7 +1491,7 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
                                 value={response}
                                 onChange={(e) => setResponse(e.target.value)}
                                 placeholder="Update your response..."
-                                className="w-full p-3 text-sm border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[var(--primary)] bg-white"
+                                className="w-full p-3 text-sm border-2 border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] bg-[var(--background)] text-[var(--text-dark)]"
                                 rows="2"
                                 autoFocus
                             />
@@ -1365,7 +1535,7 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
                         value={response}
                         onChange={(e) => setResponse(e.target.value)}
                         placeholder="Add a short response (optional)..."
-                        className="w-full p-3 text-sm border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[var(--primary)]"
+                        className="w-full p-3 text-sm border-2 border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] bg-[var(--background)] text-[var(--text-dark)]"
                         rows="2"
                     />
                     <div className="flex gap-2">
@@ -1393,7 +1563,7 @@ const RequestCard = ({ request, onStatusUpdate, isUpdating, role }) => {
                 </div>
             )}
 
-            <p className="text-[10px] text-gray-400 font-medium text-right mt-4">
+            <p className="text-[10px] text-[var(--text-light)]/60 font-medium text-right mt-4">
                 Requested on {new Date(request.createdAt).toLocaleDateString()}
             </p>
         </div>

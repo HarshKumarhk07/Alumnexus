@@ -108,8 +108,8 @@ const Events = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 text-left">
                 <div>
-                    <h1 className="text-5xl font-extrabold text-[var(--primary)] tracking-tight">Community Events</h1>
-                    <p className="text-gray-600 mt-4 text-lg max-w-xl">
+                    <h1 className="text-5xl font-extrabold text-[var(--text-dark)] tracking-tight">Community Events</h1>
+                    <p className="text-[var(--text-light)] mt-4 text-lg max-w-xl opacity-80">
                         Live webinars, technical workshops, and alumni meetups to accelerate your professional growth.
                     </p>
                 </div>
@@ -136,7 +136,7 @@ const Events = () => {
                         placeholder="Search events by title, speaker, or description..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 bg-white border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth premium-shadow"
+                        className="w-full pl-12 pr-6 py-4 bg-[var(--surface)] border border-[var(--border)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth premium-shadow text-[var(--text-dark)]"
                     />
                 </div>
             </div>
@@ -147,11 +147,11 @@ const Events = () => {
                     {[1, 2].map(i => <div key={i} className="h-48 glass-card animate-pulse border border-[var(--border)]"></div>)}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-8">
+                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8">
                     {events.length === 0 ? (
-                        <div className="py-20 text-center glass-card border border-[var(--border)]">
-                            <Calendar size={64} className="mx-auto text-gray-200 mb-4" />
-                            <p className="text-gray-500 font-medium text-lg">No upcoming events scheduled yet.</p>
+                        <div className="col-span-full py-20 text-center glass-card border border-[var(--border)] bg-[var(--surface)]">
+                            <Calendar size={64} className="mx-auto text-[var(--primary)] opacity-40 mb-4" />
+                            <p className="text-[var(--text-light)] font-medium text-lg opacity-60">No upcoming events scheduled yet.</p>
                         </div>
                     ) : (
                         events.filter(e =>
@@ -162,91 +162,90 @@ const Events = () => {
                             const startDate = new Date(event.dateTime);
                             const endDate = event.endTime ? new Date(event.endTime) : null;
                             const now = new Date();
-                            const isPast = endDate ? (endDate < now) : (startDate < now && (now - startDate) > 60 * 60 * 1000); // assume 1hr duration if no end time
+                            const isPast = endDate ? (endDate < now) : (startDate < now && (now - startDate) > 60 * 60 * 1000);
                             const isOngoing = !isPast && (now >= startDate && (endDate ? now <= endDate : (now - startDate) <= 60 * 60 * 1000));
 
-                            // Formatting helpers
                             const formatTime = (dateObj) => dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                             const durationString = endDate
                                 ? `${formatTime(startDate)} - ${formatTime(endDate)}`
                                 : formatTime(startDate);
 
                             return (
-                                <div key={event._id} className={`glass-card p-8 border border-[var(--border)] flex flex-col md:flex-row gap-8 hover:bg-[var(--surface)] transition-smooth group relative overflow-hidden ${isPast ? 'opacity-70' : ''}`}>
+                                <div key={event._id} className={`glass-card p-3 md:p-8 border border-[var(--border)] flex flex-col gap-3 md:gap-8 hover:bg-[var(--primary)]/5 transition-smooth group relative overflow-hidden ${isPast ? 'opacity-70' : ''}`}>
                                     {/* Admin/Author Action Buttons */}
                                     {(user?.role === 'admin' || (event.speaker?._id || event.speaker) === (user?._id || user?.id)) && (
-                                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-smooth z-10">
+                                        <div className="absolute top-2 right-2 md:top-4 md:right-4 flex gap-1 md:gap-2 opacity-0 group-hover:opacity-100 transition-smooth z-10">
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleEditClick(event);
                                                 }}
-                                                className="p-2 bg-blue-50 text-blue-500 rounded-lg transition-smooth hover:bg-blue-100 shadow-sm"
-                                                title="Edit Event"
+                                                className="p-1.5 md:p-2 bg-blue-50 text-blue-500 rounded-lg transition-smooth hover:bg-blue-100 shadow-sm"
                                             >
-                                                <Pencil size={20} />
+                                                <Pencil size={14} className="md:w-5 md:h-5" />
                                             </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteEvent(event._id);
                                                 }}
-                                                className="p-2 bg-red-50 text-red-500 rounded-lg transition-smooth hover:bg-red-100 shadow-sm"
-                                                title="Delete Event"
+                                                className="p-1.5 md:p-2 bg-red-50 text-red-500 rounded-lg transition-smooth hover:bg-red-100 shadow-sm"
                                             >
-                                                <Trash2 size={20} />
+                                                <Trash2 size={14} className="md:w-5 md:h-5" />
                                             </button>
                                         </div>
                                     )}
 
-                                    {/* Date Badge */}
-                                    <div className={`flex flex-col items-center justify-center w-24 h-24 rounded-3xl border border-[var(--border)] shadow-sm shrink-0 transition-smooth ${isPast ? 'bg-gray-100' : 'bg-white'}`}>
-                                        <span className={`font-extrabold text-3xl ${isPast ? 'text-gray-500' : 'text-[var(--primary)]'}`}>{startDate.getDate()}</span>
-                                        <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-                                            {startDate.toLocaleString('default', { month: 'short' })}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex-1 space-y-4 text-left">
-                                        <div className="flex flex-wrap items-center gap-3">
-                                            <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${isPast ? 'bg-slate-100 text-slate-500' : (isOngoing ? 'bg-amber-100 text-amber-600 flex items-center gap-1.5' : 'bg-green-100 text-green-700')}`}>
-                                                {isOngoing && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></div>}
-                                                {isPast ? 'Past Event' : (isOngoing ? 'Ongoing' : 'Upcoming')}
-                                            </span>
-                                            <span className="flex items-center gap-1.5 text-xs font-bold text-gray-500 font-medium bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
-                                                <Clock size={14} className={isPast ? 'text-gray-400' : 'text-[var(--primary)]'} />
-                                                {durationString}
+                                    <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+                                        {/* Date Badge */}
+                                        <div className={`flex flex-col items-center justify-center w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-[var(--border)] shadow-sm shrink-0 transition-smooth ${isPast ? 'bg-[var(--background)] opacity-50' : 'bg-[var(--surface)]'}`}>
+                                            <span className={`font-extrabold text-lg md:text-3xl ${isPast ? 'text-gray-400' : 'text-[var(--primary)]'}`}>{startDate.getDate()}</span>
+                                            <span className={`text-[var(--text-light)] opacity-60 text-[8px] md:text-xs font-bold uppercase tracking-widest ${isPast ? 'text-gray-400' : ''}`}>
+                                                {startDate.toLocaleString('default', { month: 'short' })}
                                             </span>
                                         </div>
 
-                                        <h2 className={`text-3xl font-bold transition-smooth ${isPast ? 'text-gray-600' : 'text-[var(--primary)] group-hover:text-[var(--primary-light)]'}`}>
-                                            {event.title}
-                                        </h2>
+                                        <div className="flex-1 space-y-2 md:space-y-4 text-left">
+                                            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                                                <span className={`px-2 py-0.5 md:px-3 md:py-1 text-[8px] md:text-[10px] font-bold rounded-full uppercase tracking-wider ${isPast ? 'bg-gray-100 text-gray-400' : (isOngoing ? 'bg-amber-100/10 text-amber-600 border border-amber-500/20 flex items-center gap-1' : 'bg-[var(--primary)] text-white')}`}>
+                                                    {isOngoing && <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-500 rounded-full animate-ping"></div>}
+                                                    {isPast ? 'Past' : (isOngoing ? 'Live' : 'Upcoming')}
+                                                </span>
+                                                <span className="flex items-center gap-1 text-[8px] md:text-xs font-bold text-[var(--text-dark)] opacity-70 bg-[var(--background)] px-2 py-0.5 md:px-3 md:py-1 rounded-full border border-[var(--border)] shadow-sm">
+                                                    <Clock size={10} className="md:w-3.5 md:h-3.5 text-[var(--primary)]" />
+                                                    <span className="truncate">{durationString}</span>
+                                                </span>
+                                            </div>
 
-                                        <div className="flex flex-wrap gap-6 text-sm text-gray-600 font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-[var(--border)]">
-                                                    <Users size={16} />
+                                            <h2 className={`text-sm md:text-3xl font-bold transition-smooth line-clamp-2 ${isPast ? 'text-[var(--text-dark)] opacity-40' : 'text-[var(--text-dark)] group-hover:text-[var(--primary)]'}`}>
+                                                {event.title}
+                                            </h2>
+
+                                            <div className="flex flex-col gap-2 md:gap-4 text-[10px] md:text-sm text-[var(--text-light)] font-medium">
+                                                <div className="flex items-center gap-1.5 md:gap-2">
+                                                    <div className="w-6 h-6 md:w-8 md:h-8 bg-[var(--background)] rounded-full flex items-center justify-center border border-[var(--border)] shrink-0">
+                                                        <Users size={12} className="md:w-4 md:h-4" />
+                                                    </div>
+                                                    <span className="truncate">{event.speakerName || 'Guest Speaker'}</span>
                                                 </div>
-                                                {event.speakerName || 'Guest Speaker'}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-[var(--border)]">
-                                                    {event.meetingType === 'online' ? <Video size={16} /> : <MapPin size={16} />}
+                                                <div className="flex items-center gap-1.5 md:gap-2">
+                                                    <div className="w-6 h-6 md:w-8 md:h-8 bg-[var(--background)] rounded-full flex items-center justify-center border border-[var(--border)] shrink-0">
+                                                        {event.meetingType === 'online' ? <Video size={12} className="md:w-4 md:h-4" /> : <MapPin size={12} className="md:w-4 md:h-4" />}
+                                                    </div>
+                                                    <span className="truncate">{event.meetingType === 'online' ? (event.meetingLink ? 'Webinar' : 'Online') : event.location || 'Physical'}</span>
                                                 </div>
-                                                {event.meetingType === 'online' ? (event.meetingLink ? 'Live Webinar' : 'Online Event') : event.location || 'Physical Meetup'}
                                             </div>
+
+                                            <p className="hidden md:block text-[var(--text-light)] opacity-80 max-w-2xl leading-relaxed line-clamp-2">
+                                                {event.description}
+                                            </p>
                                         </div>
-
-                                        <p className="text-gray-500 max-w-2xl leading-relaxed">
-                                            {event.description}
-                                        </p>
                                     </div>
 
-                                    <div className="flex flex-col justify-end gap-3 min-w-[180px]">
+                                    <div className="flex flex-col gap-2 mt-auto">
                                         {isPast ? (
-                                            <div className="w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-center border-2 border-transparent cursor-not-allowed">
-                                                Event is Over
+                                            <div className="w-full py-2 md:py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-center text-xs md:text-base cursor-not-allowed">
+                                                Over
                                             </div>
                                         ) : (
                                             <>
@@ -254,7 +253,7 @@ const Events = () => {
                                                     <button
                                                         onClick={() => handleRegister(event._id)}
                                                         disabled={event.registeredStudents.some(id => id === user?._id || id === user?.id)}
-                                                        className={`w-full py-4 rounded-xl font-bold transition-smooth ${event.registeredStudents.some(id => id === user?._id || id === user?.id)
+                                                        className={`w-full py-2 md:py-4 rounded-xl font-bold transition-smooth text-xs md:text-base ${event.registeredStudents.some(id => id === user?._id || id === user?.id)
                                                             ? 'bg-gray-100 text-gray-400 cursor-default'
                                                             : 'bg-[var(--primary)] text-white premium-shadow hover:bg-[var(--primary-light)]'
                                                             }`}
@@ -267,9 +266,9 @@ const Events = () => {
                                                         href={event.meetingLink}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="w-full py-4 border-2 border-[var(--primary)] text-[var(--primary)] rounded-xl font-bold hover:bg-[var(--surface)] transition-smooth text-center flex items-center justify-center gap-2"
+                                                        className="w-full py-2 md:py-4 border-2 border-[var(--primary)] text-[var(--primary)] rounded-xl font-bold hover:bg-[var(--surface)] transition-smooth text-center flex items-center justify-center gap-1.5 md:gap-2 text-xs md:text-base"
                                                     >
-                                                        Join Meeting <ExternalLink size={18} />
+                                                        Join <ExternalLink size={14} className="md:w-[18px] md:h-[18px]" />
                                                     </a>
                                                 )}
                                             </>
@@ -285,24 +284,24 @@ const Events = () => {
             {/* Create Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-2xl premium-shadow overflow-hidden text-left animate-scale-in">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-2xl premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
                         <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-[var(--primary)]">{isEditing ? 'Edit Community Event' : 'Schedule Community Event'}</h2>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth">
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateEvent} className="p-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <form onSubmit={handleCreateEvent} className="p-10 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar">
                             <div className="md:col-span-2 space-y-2">
                                 <label className="text-sm font-bold">Event Title</label>
-                                <input required className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
+                                <input required className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newEvent.title}
                                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-bold">Speaker Name</label>
-                                <input required className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
+                                <input required className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                     value={newEvent.speakerName}
                                     onChange={(e) => setNewEvent({ ...newEvent, speakerName: e.target.value })}
                                 />
@@ -335,7 +334,7 @@ const Events = () => {
                             {newEvent.meetingType === 'online' ? (
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-sm font-bold">Meeting Link (Zoom/Google Meet)</label>
-                                    <input required className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
+                                    <input required className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                         value={newEvent.meetingLink}
                                         onChange={(e) => setNewEvent({ ...newEvent, meetingLink: e.target.value })}
                                     />
@@ -343,7 +342,7 @@ const Events = () => {
                             ) : (
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-sm font-bold">Location / Venue</label>
-                                    <input required className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none"
+                                    <input required className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none text-[var(--text-dark)]"
                                         value={newEvent.location}
                                         onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                                     />
@@ -351,7 +350,7 @@ const Events = () => {
                             )}
                             <div className="md:col-span-2 space-y-2">
                                 <label className="text-sm font-bold">Short Description</label>
-                                <textarea rows="3" className="w-full px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl focus:outline-none resize-none"
+                                <textarea rows="3" className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none text-[var(--text-dark)]"
                                     value={newEvent.description}
                                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                                 ></textarea>
@@ -380,12 +379,12 @@ const Events = () => {
             {/* Success Modal */}
             {showSuccessModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-sm premium-shadow p-10 text-center animate-scale-in">
+                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-sm premium-shadow p-10 text-center animate-scale-in">
                         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Bell size={40} />
                         </div>
                         <h2 className="text-2xl font-bold text-[var(--primary)] mb-2">Event Posted!</h2>
-                        <p className="text-gray-500 mb-8 font-medium">Your community event has been published and notifications were sent.</p>
+                        <p className="text-[var(--text-light)] mb-8 font-medium">Your community event has been published and notifications were sent.</p>
                         <button
                             onClick={() => setShowSuccessModal(false)}
                             className="w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow hover:bg-[var(--primary-light)] transition-smooth"

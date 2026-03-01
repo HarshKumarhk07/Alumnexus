@@ -26,8 +26,8 @@ const ImageSlider = () => {
         try {
             // Get all images (already sorted by latest in backend)
             const res = await galleryService.getGallery();
-            // Take only the top 10
-            const latestImages = res.data.data.slice(0, 10);
+            // Take only the top 20
+            const latestImages = res.data.data.slice(0, 20);
             setImages(latestImages);
         } catch (error) {
             console.error('Failed to fetch slider images:', error);

@@ -14,10 +14,13 @@ const {
     deleteUser,
     updateUserStatus
 } = require('../controllers/admin.controller');
+const { getSpotlight, updateSpotlight } = require('../controllers/spotlight.controller');
+const { upload } = require('../config/cloudinary');
 const { protect, authorize } = require('../middleware/auth');
 
 // Publicly accessible stats for all visitors (including unauthenticated landing page)
 router.get('/public-stats', getPublicStats);
+router.get('/spotlight', getSpotlight);
 
 // Protect all following routes
 router.use(protect);
@@ -36,5 +39,6 @@ router.post('/bulk-email', sendBulkEmail);
 router.get('/jobs', getAllJobs);
 router.delete('/users/:id', deleteUser);
 router.put('/users/status/:id', updateUserStatus);
+router.post('/spotlight', upload.single('image'), updateSpotlight);
 
 module.exports = router;
