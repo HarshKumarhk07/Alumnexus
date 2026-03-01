@@ -190,9 +190,9 @@ const Navbar = () => {
                             </div>
                         </>
                     ) : (
-                        <div className="flex gap-2 md:gap-4">
-                            <Link to="/login" className="px-3 md:px-4 py-2 hover:text-[var(--primary)] transition-smooth font-medium text-sm md:text-base">Login</Link>
-                            <Link to="/register" className="px-4 md:px-6 py-2 bg-[var(--primary)] text-[var(--text-light)] rounded-xl premium-shadow hover:scale-105 transition-smooth font-bold text-sm md:text-base">
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <Link to="/login" className="px-2 md:px-4 py-1.5 md:py-2 hover:text-[var(--primary)] transition-smooth font-medium text-xs md:text-base whitespace-nowrap">Login</Link>
+                            <Link to="/register" className="px-3 md:px-6 py-1.5 md:py-2 bg-[var(--primary)] text-[var(--text-light)] rounded-xl premium-shadow hover:scale-105 transition-smooth font-bold text-xs md:text-base whitespace-nowrap">
                                 Join Now
                             </Link>
                         </div>

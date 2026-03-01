@@ -390,7 +390,7 @@ const Dashboard = () => {
             {/* Welcome Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-2xl md:text-4xl font-bold text-[var(--primary)]">Hello, {user?.name}! 👋</h1>
+                    <h1 className="text-xl md:text-4xl font-bold text-[var(--primary)]">Hello, {user?.name}! 👋</h1>
                     <p className="text-sm md:text-base text-gray-600 mt-1">Here's the AlumNexus overview for today.</p>
                 </div>
                 <div className="flex flex-wrap gap-3 md:gap-4 w-full md:w-auto">
@@ -1226,7 +1226,7 @@ const StatCard = ({ label, value, icon: Icon, trend, color, to, onClick }) => {
                 </div>
                 {trend && <span className={`text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full ${color || 'text-green-600 bg-green-50'}`}>{trend}</span>}
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold text-[var(--primary)]">{value}</h3>
+            <h3 className="text-xl md:text-3xl font-bold text-[var(--primary)]">{value}</h3>
             <p className="text-gray-500 text-xs md:text-sm font-medium">{label}</p>
         </Component>
     );
