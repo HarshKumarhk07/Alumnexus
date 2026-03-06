@@ -140,13 +140,13 @@ const Register = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold">Batch Year</label>
+                                <label className="text-sm font-semibold">{formData.role === 'alumni' ? 'Graduation Batch Year' : 'Expected Graduation Year'}</label>
                                 <input
                                     type="number"
                                     required
                                     min="1950"
                                     className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth"
-                                    placeholder="2023"
+                                    placeholder="2024"
                                     value={formData.batchYear}
                                     onChange={(e) => setFormData({ ...formData, batchYear: e.target.value })}
                                 />
@@ -169,6 +169,25 @@ const Register = () => {
                                     <option value="Others">Others</option>
                                 </select>
                             </div>
+
+                            {formData.role === 'student' && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold">Current Academic Year</label>
+                                    <select
+                                        required
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-smooth"
+                                        value={formData.year}
+                                        onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                                    >
+                                        <option value="">Select Year</option>
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                        <option value="5">5th Year (Dual/Architecture)</option>
+                                    </select>
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold">Roll Number</label>
                                 <input

@@ -355,7 +355,7 @@ const StudentDirectory = () => {
                                 <div className="space-y-4">
                                     <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Resume</h4>
                                     <button
-                                        onClick={() => setShowResumePreview(true)}
+                                        onClick={() => window.open(getResumePreviewUrl(selectedStudent.resumeURL), '_blank', 'noopener,noreferrer')}
                                         className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--background)] text-[var(--text-dark)] rounded-xl font-bold hover:bg-[var(--accent)] hover:text-white transition-smooth"
                                     >
                                         <FileText size={20} /> View Resume

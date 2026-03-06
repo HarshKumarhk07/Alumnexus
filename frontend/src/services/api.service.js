@@ -1,7 +1,20 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
+    // If we're on localhost, default to the local backend port
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5001/api';
+    }
+
+    // In production, if VITE_API_URL is missing, try to use the current origin
+    // This assumes the backend and frontend are on the same domain or follows a convention
+    return `${window.location.origin}/api`;
+};
+
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
+    baseURL: getBaseURL()
 });
 
 // API Services

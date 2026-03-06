@@ -525,17 +525,17 @@ const Dashboard = () => {
                             {(user.role === 'admin' ? recentJobs : recentJobs).map((job, i) => (
                                 <Link to="/jobs" key={i} className="glass-card p-5 border border-[var(--border)] flex justify-between items-center group cursor-pointer hover:bg-[var(--primary)] transition-smooth block">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-[var(--accent)] rounded-xl flex items-center justify-center font-bold text-white group-hover:bg-white group-hover:text-[var(--primary)] transition-smooth">
+                                        <div className="w-12 h-12 bg-[var(--accent)] rounded-xl flex items-center justify-center font-bold text-white group-hover:bg-[var(--primary)] transition-smooth">
                                             {job.company?.charAt(0) || 'J'}
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-[var(--text-dark)] group-hover:text-white transition-smooth">{job.role}</h4>
-                                            <p className="text-sm text-[var(--text-light)] opacity-70 group-hover:text-white/80 transition-smooth">{job.company} • {job.location}</p>
+                                            <h4 className="font-bold text-[var(--text-dark)] transition-smooth">{job.role}</h4>
+                                            <p className="text-sm text-[var(--text-light)] opacity-70 transition-smooth">{job.company} • {job.location}</p>
                                         </div>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
-                                        <span className="text-xs text-gray-400 group-hover:text-white/70 flex items-center gap-1 transition-smooth"><Clock size={12} /> {new Date(job.createdAt).toLocaleDateString()}</span>
-                                        <span className="text-xs font-bold text-[var(--primary)] group-hover:text-white transition-smooth flex items-center gap-1">View Details <ArrowUpRight size={14} /></span>
+                                        <span className="text-xs text-[var(--text-light)] flex items-center gap-1 transition-smooth"><Clock size={12} /> {new Date(job.createdAt).toLocaleDateString()}</span>
+                                        <span className="text-xs font-bold text-[var(--primary)] transition-smooth flex items-center gap-1">View Details <ArrowUpRight size={14} /></span>
                                     </div>
                                 </Link>
                             ))}

@@ -75,8 +75,8 @@ const CommentModal = ({ blog, isOpen, onClose, onCommentAdded, onCommentDeleted 
                     )}
                 </div>
 
-                <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)]">
-                    <div className="flex gap-3">
+                <div className="p-4 md:p-6 border-t border-[var(--border)] bg-[var(--surface)]">
+                    <div className="flex items-center gap-2 md:gap-3">
                         <input
                             type="text"
                             value={commentText}
@@ -85,12 +85,12 @@ const CommentModal = ({ blog, isOpen, onClose, onCommentAdded, onCommentDeleted 
                                 if (e.key === 'Enter') handleSubmit();
                             }}
                             placeholder="Write a comment..."
-                            className="flex-1 px-5 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-[var(--text-dark)]"
+                            className="flex-1 min-w-0 px-3 md:px-5 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-smooth font-bold text-[var(--text-dark)]"
                         />
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting || !commentText.trim()}
-                            className="px-6 py-3 bg-[var(--primary)] text-white text-sm font-bold rounded-xl premium-shadow hover:scale-105 active:scale-95 transition-smooth disabled:opacity-50 disabled:hover:scale-100"
+                            className="shrink-0 px-4 md:px-6 py-3 bg-[var(--primary)] text-white text-sm font-bold rounded-xl premium-shadow hover:scale-105 active:scale-95 transition-smooth disabled:opacity-50 disabled:hover:scale-100"
                         >
                             Post
                         </button>

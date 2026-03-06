@@ -5,7 +5,7 @@ const { protect, authorize, requireVerified } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
 
 router.get('/', getGallery);
-router.post('/', protect, authorize('admin', 'alumni'), requireVerified, upload.array('images', 10), uploadMedia);
+router.post('/', protect, authorize('admin', 'alumni'), requireVerified, upload.array('images', 50), uploadMedia);
 router.delete('/:id', protect, authorize('admin'), deleteMedia);
 
 module.exports = router;

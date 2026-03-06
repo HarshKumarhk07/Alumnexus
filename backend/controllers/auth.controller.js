@@ -2,11 +2,20 @@ const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 
 // Get token from model, create cookie and send response
-const sendTokenResponse = (user, statusCode, res) => {
+const sendTokenResponse = async (user, statusCode, res) => {
     // Create token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRE
     });
+
+    let verificationStatus = undefined;
+    if (user.role === 'alumni') {
+        const AlumniProfile = require('../models/alumniProfile.model');
+        const profile = await AlumniProfile.findOne({ user: user._id });
+        if (profile) {
+            verificationStatus = profile.verificationStatus;
+        }
+    }
 
     res.status(statusCode).json({
         success: true,
@@ -16,7 +25,8 @@ const sendTokenResponse = (user, statusCode, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            isVerified: user.isVerified
+            isVerified: user.isVerified,
+            verificationStatus
         }
     });
 };
@@ -102,7 +112,7 @@ exports.register = async (req, res, next) => {
             });
         }
 
-        sendTokenResponse(user, 201, res);
+        await sendTokenResponse(user, 201, res);
     } catch (err) {
         if (err.code === 11000) {
             return res.status(400).json({ success: false, message: 'User already exists with this email' });
@@ -150,7 +160,7 @@ exports.login = async (req, res, next) => {
         }
 
         console.log(`Login successful for: [${email}]`);
-        sendTokenResponse(user, 200, res);
+        await sendTokenResponse(user, 200, res);
     } catch (err) {
         console.error(`Login error: ${err.message}`);
         res.status(400).json({ success: false, message: err.message });
@@ -161,11 +171,24 @@ exports.login = async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = async (req, res, next) => {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
+
+    let verificationStatus = undefined;
+    if (user && user.role === 'alumni') {
+        const AlumniProfile = require('../models/alumniProfile.model');
+        const profile = await AlumniProfile.findOne({ user: user._id }).lean();
+        if (profile) {
+            verificationStatus = profile.verificationStatus;
+        }
+    }
 
     res.status(200).json({
         success: true,
-        data: user
+        data: {
+            ...user,
+            id: user._id,
+            verificationStatus
+        }
     });
 };
 

@@ -20,6 +20,7 @@ const Blogs = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [likeAnimId, setLikeAnimId] = useState(null);
     const [activeBlogForComments, setActiveBlogForComments] = useState(null);
+    const [selectedBlog, setSelectedBlog] = useState(null);
     const [newBlog, setNewBlog] = useState({
         title: '', content: '', category: 'Technology', image: null
     });
@@ -159,6 +160,12 @@ const Blogs = () => {
                 setActiveBlogForComments(updatedBlog);
             }
         }
+        if (selectedBlog) {
+            const updatedBlog = blogs.find(b => b._id === selectedBlog._id);
+            if (updatedBlog) {
+                setSelectedBlog(updatedBlog);
+            }
+        }
     }, [blogs]);
 
     return (
@@ -221,7 +228,7 @@ const Blogs = () => {
                             b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             b.content.toLowerCase().includes(searchTerm.toLowerCase())
                         ).map((blog) => (
-                            <div key={blog._id} className="bg-[var(--surface)] overflow-hidden rounded-2xl md:rounded-[32px] premium-shadow border border-[var(--border)] flex flex-col hover:-translate-y-2 transition-smooth group">
+                            <div key={blog._id} onClick={() => setSelectedBlog(blog)} className="bg-[var(--surface)] overflow-hidden rounded-2xl md:rounded-[32px] premium-shadow border border-[var(--border)] flex flex-col hover:-translate-y-2 transition-smooth group cursor-pointer">
                                 <div className="h-32 md:h-48 relative overflow-hidden bg-[var(--accent)] text-white">
                                     {blog.coverImage ? (
                                         <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover group-hover:scale-110 transition-smooth" />
@@ -278,7 +285,7 @@ const Blogs = () => {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button
-                                                onClick={() => handleLike(blog._id)}
+                                                onClick={(e) => { e.stopPropagation(); handleLike(blog._id); }}
                                                 className={`flex items-center gap-1 transition-smooth ${blog.likes.includes(user?._id) ? 'text-red-500' : 'text-[var(--text-light)]/60 hover:text-red-400'}`}
                                             >
                                                 <Heart
@@ -289,7 +296,7 @@ const Blogs = () => {
                                                 <span className={`text-[10px] font-bold ${blog.likes.includes(user?._id) ? 'text-red-500' : ''}`}>{blog.likes.length}</span>
                                             </button>
                                             <button
-                                                onClick={() => setActiveBlogForComments(blog)}
+                                                onClick={(e) => { e.stopPropagation(); setActiveBlogForComments(blog); }}
                                                 className={`flex items-center gap-1 transition-smooth ${activeBlogForComments?._id === blog._id ? 'text-[var(--primary)]' : 'text-[var(--text-light)]/60 hover:text-[var(--primary)]'}`}
                                             >
                                                 <MessageSquare size={14} fill={activeBlogForComments?._id === blog._id ? 'currentColor' : 'none'} />
@@ -472,6 +479,89 @@ const Blogs = () => {
                                     {isEditing ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* View Full Blog Modal */}
+            {
+                selectedBlog && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4" onClick={() => setSelectedBlog(null)}>
+                        <div
+                            className="bg-[var(--surface)] text-[var(--text-dark)] rounded-[32px] w-full max-w-3xl premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Header Image if exists */}
+                            {selectedBlog.coverImage && (
+                                <div className="h-48 md:h-64 w-full relative shrink-0">
+                                    <img src={selectedBlog.coverImage} alt={selectedBlog.title} className="w-full h-full object-cover" />
+                                    <button onClick={() => setSelectedBlog(null)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-smooth">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="p-6 md:p-8 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                                {!selectedBlog.coverImage && (
+                                    <div className="flex justify-between items-start">
+                                        <div className="px-3 py-1 bg-[var(--accent)]/10 text-[var(--primary)] text-xs rounded-full font-bold uppercase tracking-wider mb-4 inline-block">
+                                            {selectedBlog.category}
+                                        </div>
+                                        <button onClick={() => setSelectedBlog(null)} className="p-2 text-[var(--text-light)] hover:bg-[var(--background)] rounded-full transition-smooth focus:outline-none">
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                )}
+                                {selectedBlog.coverImage && (
+                                    <div className="px-3 py-1 bg-[var(--accent)]/10 text-[var(--primary)] text-xs rounded-full font-bold uppercase tracking-wider inline-block w-max">
+                                        {selectedBlog.category}
+                                    </div>
+                                )}
+
+                                <h2 className="text-2xl md:text-4xl font-extrabold text-[var(--text-dark)] leading-tight">
+                                    {selectedBlog.title}
+                                </h2>
+
+                                <div className="flex items-center gap-3 py-4 border-y border-[var(--border)]">
+                                    <div className="w-10 h-10 bg-[var(--background)] text-[var(--primary)] rounded-full flex items-center justify-center text-sm font-bold border border-[var(--border)]">
+                                        {selectedBlog.author?.name?.charAt(0) || 'A'}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-[var(--text-dark)]">{selectedBlog.author?.name || 'Anonymous'}</p>
+                                        <p className="text-xs text-[var(--text-light)] font-medium">
+                                            {new Date(selectedBlog.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="whitespace-pre-wrap leading-relaxed text-[var(--text-dark)]/80 text-sm md:text-base">
+                                    {selectedBlog.content}
+                                </div>
+
+                                <div className="flex items-center gap-6 mt-4 pt-6 border-t border-[var(--border)]">
+                                    <button
+                                        onClick={() => handleLike(selectedBlog._id)}
+                                        className={`flex items-center gap-2 transition-smooth ${selectedBlog.likes.includes(user?._id) ? 'text-red-500' : 'text-[var(--text-light)]/60 hover:text-red-400'}`}
+                                    >
+                                        <Heart
+                                            size={20}
+                                            fill={selectedBlog.likes.includes(user?._id) ? 'currentColor' : 'none'}
+                                        />
+                                        <span className="font-bold">{selectedBlog.likes.length} Likes</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setActiveBlogForComments(selectedBlog);
+                                            setSelectedBlog(null);
+                                        }}
+                                        className="flex items-center gap-2 text-[var(--text-light)]/60 hover:text-[var(--primary)] transition-smooth"
+                                    >
+                                        <MessageSquare size={20} />
+                                        <span className="font-bold">{selectedBlog.comments?.length || 0} Comments</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )
