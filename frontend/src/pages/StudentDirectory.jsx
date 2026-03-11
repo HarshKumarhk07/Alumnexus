@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import {
     Search, Filter, GraduationCap, Mail,
     ExternalLink, Linkedin, Globe, Loader2, X, Github,
-    FileText, User, Briefcase, ShieldCheck, ShieldOff, Trash2, Download
+    FileText, User, Briefcase, ShieldCheck, ShieldOff, Trash2, Download, UserPlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AddStudentModal from '../components/AddStudentModal';
 
 const StudentDirectory = () => {
     const { user } = useAuth();
@@ -16,6 +17,7 @@ const StudentDirectory = () => {
     const [filters, setFilters] = useState({ branch: 'All', year: '', skill: '' });
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showResumePreview, setShowResumePreview] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
 
     const branches = ['All', 'Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil', 'Electrical', 'Others'];
 
@@ -116,12 +118,20 @@ const StudentDirectory = () => {
                     </p>
                 </div>
                 {user?.role === 'admin' && (
-                    <button
-                        onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-5 py-3 bg-[var(--primary)] hover:bg-[var(--primary-light)] text-white rounded-2xl font-bold text-sm transition-all duration-200 shadow-lg shadow-[var(--primary)]/20 shrink-0 mt-2"
-                    >
-                        <Download size={16} /> Export CSV
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-sm transition-all duration-200 shadow-lg shadow-emerald-600/20 shrink-0 mt-2"
+                        >
+                            <UserPlus size={16} /> Add Student
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-5 py-3 bg-[var(--primary)] hover:bg-[var(--primary-light)] text-white rounded-2xl font-bold text-sm transition-all duration-200 shadow-lg shadow-[var(--primary)]/20 shrink-0 mt-2"
+                        >
+                            <Download size={16} /> Export CSV
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -415,6 +425,13 @@ const StudentDirectory = () => {
                     </div>
                 </div>
             )}
+
+            {/* Add Student Modal */}
+            <AddStudentModal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSuccess={fetchStudents}
+            />
         </div>
     );
 };

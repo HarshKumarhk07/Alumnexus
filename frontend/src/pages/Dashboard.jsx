@@ -5,7 +5,7 @@ import {
     ArrowUpRight, Clock, Star, Target, ShieldCheck,
     FileText, Mail, Download, CheckCircle2, XCircle, X,
     Heart, MessageSquare, Image as ImageIcon, Handshake, MessageCircle, UserCheck, Loader2, GraduationCap, Upload,
-    Newspaper, CalendarDays, BarChart2, PieChart
+    Newspaper, CalendarDays, BarChart2, PieChart, ShieldAlert
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { adminService, notificationService, jobService, blogService, profileService, eventService, surveyService } from '../services/api.service';
@@ -63,6 +63,7 @@ const Dashboard = () => {
     const [isPostingSurvey, setIsPostingSurvey] = useState(false);
 
     const [pendingAlumni, setPendingAlumni] = useState([]);
+    const [pendingStudents, setPendingStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Admin Spotlight State
@@ -127,11 +128,13 @@ const Dashboard = () => {
 
 
             if (user.role === 'admin') {
-                const [pendingRes, jobsRes] = await Promise.all([
+                const [pendingAlumniRes, pendingStudentsRes, jobsRes] = await Promise.all([
                     adminService.getPendingAlumni(),
+                    adminService.getPendingStudents(),
                     adminService.getAllJobs()
                 ]);
-                setPendingAlumni(pendingRes.data.data);
+                setPendingAlumni(pendingAlumniRes.data.data);
+                setPendingStudents(pendingStudentsRes.data.data);
                 setRecentJobs(jobsRes.data.data.slice(0, 3));
             } else if (user.role === 'alumni') {
                 const [jobRes, reqRes] = await Promise.all([
@@ -155,11 +158,16 @@ const Dashboard = () => {
         }
     };
 
-    const handleVerify = async (id, status) => {
+    const handleVerify = async (id, status, role = 'alumni') => {
         try {
-            await adminService.verifyAlumni(id, status);
-            toast.success(`Alumni ${status === 'approved' ? 'approved' : 'rejected'}`);
-            setPendingAlumni(pendingAlumni.filter(a => a._id !== id));
+            if (role === 'alumni') {
+                await adminService.verifyAlumni(id, status);
+                setPendingAlumni(pendingAlumni.filter(a => a._id !== id));
+            } else {
+                await adminService.verifyStudent(id, status);
+                setPendingStudents(pendingStudents.filter(s => s._id !== id));
+            }
+            toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} ${status === 'approved' ? 'approved' : 'rejected'}`);
             fetchDashboardData();
         } catch (err) {
             toast.error('Verification failed');
@@ -453,13 +461,33 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {/* Verification Warning for Alumni & Students */}
+            {((user.role === 'alumni' || user.role === 'student') && !user.isVerified) && (
+                <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-[32px] flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle">
+                    <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
+                        <ShieldAlert size={32} />
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h3 className="text-xl font-bold text-amber-800">Account Pending Verification</h3>
+                        <p className="text-amber-700 opacity-80 mt-1">
+                            Your {user.role} profile is currently being reviewed by our administrators.
+                            You'll have full access to all platform features once approved.
+                        </p>
+                    </div>
+                    <div className="px-6 py-2 bg-amber-100 text-amber-700 rounded-xl font-bold text-sm border border-amber-200">
+                        Status: Pending Approval
+                    </div>
+                </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {user.role === 'admin' ? (
                     <>
                         <StatCard label="Total Students" value={stats?.totalStudents || 0} icon={Users} onClick={() => fetchModalUsers('student')} />
                         <StatCard label="Total Alumni" value={stats?.totalAlumni || 0} icon={ShieldCheck} onClick={() => fetchModalUsers('alumni')} />
-                        <StatCard label="Pending Verifications" value={stats?.pendingAlumni || 0} icon={Clock} trend="Urgent" color="text-amber-600" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} />
+                        <StatCard label="Pending Alumni" value={stats?.pendingAlumni || 0} icon={Clock} trend="Urgent" color="text-amber-600" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} />
+                        <StatCard label="Pending Students" value={stats?.pendingStudents || 0} icon={Clock} trend="Urgent" color="text-amber-600" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} />
                         <StatCard label="Active Jobs" value={stats?.totalJobs || 0} icon={Briefcase} to="/jobs" />
                     </>
                 ) : (
@@ -498,10 +526,46 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => handleVerify(alumni._id, 'approved')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-smooth" title="Approve">
+                                            <button onClick={() => handleVerify(alumni._id, 'approved', 'alumni')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-smooth" title="Approve">
                                                 <CheckCircle2 size={24} />
                                             </button>
-                                            <button onClick={() => handleVerify(alumni._id, 'rejected')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-smooth" title="Reject">
+                                            <button onClick={() => handleVerify(alumni._id, 'rejected', 'alumni')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-smooth" title="Reject">
+                                                <XCircle size={24} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {user.role === 'admin' && pendingStudents.length > 0 && (
+                        <div className="space-y-4 pt-6">
+                            <h2 className="text-2xl font-bold text-[var(--text-dark)] flex items-center gap-2">
+                                <Clock size={24} className="text-[var(--accent)]" /> Student Verification Requests
+                            </h2>
+                            <div className="space-y-3">
+                                {pendingStudents.map((student) => (
+                                    <div key={student._id} className="glass-card p-5 border border-[var(--border)] flex justify-between items-center group hover:bg-[var(--surface)] transition-smooth">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-[var(--primary)] rounded-xl premium-shadow overflow-hidden flex items-center justify-center font-bold text-white shrink-0">
+                                                {student.profilePhoto && student.profilePhoto !== 'no-photo.jpg' ? (
+                                                    <img src={student.profilePhoto} alt={student.user.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    student.user.name.charAt(0)
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-[var(--text-dark)]">{student.user.name}</h4>
+                                                <p className="text-sm text-[var(--text-light)] opacity-80">{student.branch} • Year {student.year}</p>
+                                                <p className="text-xs text-[var(--primary-light)] font-medium">Student</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleVerify(student._id, 'approved', 'student')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-smooth" title="Approve">
+                                                <CheckCircle2 size={24} />
+                                            </button>
+                                            <button onClick={() => handleVerify(student._id, 'rejected', 'student')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-smooth" title="Reject">
                                                 <XCircle size={24} />
                                             </button>
                                         </div>
@@ -610,126 +674,130 @@ const Dashboard = () => {
                     </div>
 
                     {/* Requests Section */}
-                    {user.role !== 'admin' && (
-                        <div className="space-y-6 pt-10">
-                            <div className="flex justify-between items-center px-2">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-[var(--surface)] text-[var(--primary)] rounded-lg">
-                                        <Handshake size={24} />
+                    {
+                        user.role !== 'admin' && (
+                            <div className="space-y-6 pt-10">
+                                <div className="flex justify-between items-center px-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-[var(--surface)] text-[var(--primary)] rounded-lg">
+                                            <Handshake size={24} />
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-[var(--primary)]">Mentorship & Referrals</h2>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-[var(--primary)]">Mentorship & Referrals</h2>
+                                    <span className="bg-white/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-[var(--primary)] border">
+                                        {requests.length} Total
+                                    </span>
                                 </div>
-                                <span className="bg-white/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-[var(--primary)] border">
-                                    {requests.length} Total
-                                </span>
-                            </div>
 
-                            {requests.length === 0 ? (
-                                <div className="p-16 text-center bg-[var(--surface)] border-2 border-dashed border-[var(--border)] rounded-[32px] animate-fade-in">
-                                    <div className="w-16 h-16 bg-[var(--background)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-[var(--primary)]/40">
-                                        <Clock size={32} />
+                                {requests.length === 0 ? (
+                                    <div className="p-16 text-center bg-[var(--surface)] border-2 border-dashed border-[var(--border)] rounded-[32px] animate-fade-in">
+                                        <div className="w-16 h-16 bg-[var(--background)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-[var(--primary)]/40">
+                                            <Clock size={32} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-gray-500 mb-2">No active requests</h3>
+                                        <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                                            {user.role === 'student'
+                                                ? "Request mentorship or referral from our distinguished alumni to boost your career."
+                                                : "Students who reach out to you for guidance or referrals will appear here."}
+                                        </p>
+                                        {user.role === 'student' && (
+                                            <Link to="/directory" className="inline-block mt-6 px-6 py-3 bg-[var(--primary)] text-white font-bold rounded-xl hover:bg-[var(--primary-light)] transition-smooth">
+                                                Find Alumni
+                                            </Link>
+                                        )}
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-500 mb-2">No active requests</h3>
-                                    <p className="text-sm text-gray-400 max-w-sm mx-auto">
-                                        {user.role === 'student'
-                                            ? "Request mentorship or referral from our distinguished alumni to boost your career."
-                                            : "Students who reach out to you for guidance or referrals will appear here."}
-                                    </p>
-                                    {user.role === 'student' && (
-                                        <Link to="/directory" className="inline-block mt-6 px-6 py-3 bg-[var(--primary)] text-white font-bold rounded-xl hover:bg-[var(--primary-light)] transition-smooth">
-                                            Find Alumni
-                                        </Link>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {requests.map((req) => (
-                                        <RequestCard
-                                            key={req._id}
-                                            request={req}
-                                            role={user.role}
-                                            isUpdating={isUpdatingRequest === req._id}
-                                            onStatusUpdate={handleUpdateRequestStatus}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {requests.map((req) => (
+                                            <RequestCard
+                                                key={req._id}
+                                                request={req}
+                                                role={user.role}
+                                                isUpdating={isUpdatingRequest === req._id}
+                                                onStatusUpdate={handleUpdateRequestStatus}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    }
+                </div >
 
                 {/* Sidebar Widgets */}
-                <div className="space-y-8 px-4 md:px-0">
+                <div className="space-y-8 px-4 md:px-0" >
                     {/* Active Polls Widget */}
-                    {activeSurveys.length > 0 && (
-                        <div className="glass-card p-6 border border-[var(--border)] space-y-4">
-                            <h3 className="text-xl font-bold flex items-center gap-2">
-                                <PieChart size={20} className="text-[var(--primary)]" /> Active Polls
-                            </h3>
-                            <div className="space-y-4">
-                                {activeSurveys.map(poll => (
-                                    <div key={poll._id} className="p-4 bg-[var(--background)] rounded-2xl border border-[var(--border)] space-y-3 relative group">
-                                        {/* Admin Delete Button */}
-                                        {user?.role === 'admin' && (
-                                            <button
-                                                onClick={async () => {
-                                                    if (window.confirm('Delete this poll?')) {
-                                                        try {
-                                                            await surveyService.deleteSurvey(poll._id);
-                                                            setActiveSurveys(activeSurveys.filter(s => s._id !== poll._id));
-                                                            toast.success('Poll deleted');
-                                                        } catch (e) { toast.error('Failed to delete poll'); }
-                                                    }
-                                                }}
-                                                className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-smooth"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        )}
+                    {
+                        activeSurveys.length > 0 && (
+                            <div className="glass-card p-6 border border-[var(--border)] space-y-4">
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                    <PieChart size={20} className="text-[var(--primary)]" /> Active Polls
+                                </h3>
+                                <div className="space-y-4">
+                                    {activeSurveys.map(poll => (
+                                        <div key={poll._id} className="p-4 bg-[var(--background)] rounded-2xl border border-[var(--border)] space-y-3 relative group">
+                                            {/* Admin Delete Button */}
+                                            {user?.role === 'admin' && (
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Delete this poll?')) {
+                                                            try {
+                                                                await surveyService.deleteSurvey(poll._id);
+                                                                setActiveSurveys(activeSurveys.filter(s => s._id !== poll._id));
+                                                                toast.success('Poll deleted');
+                                                            } catch (e) { toast.error('Failed to delete poll'); }
+                                                        }
+                                                    }}
+                                                    className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-smooth"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            )}
 
-                                        <p className="font-bold text-gray-800 pr-6">{poll.question}</p>
+                                            <p className="font-bold text-gray-800 pr-6">{poll.question}</p>
 
-                                        {poll.hasVoted ? (
-                                            <div className="bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
-                                                <CheckCircle2 size={16} /> Thanks for voting!
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {poll.options.map(opt => (
-                                                    <button
-                                                        key={opt._id}
-                                                        onClick={() => handleVoteSurvey(poll._id, opt._id)}
-                                                        className="w-full text-left px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--text-dark)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-smooth"
-                                                    >
-                                                        {opt.text}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Admin Results View */}
-                                        {user?.role === 'admin' && poll.totalVotes !== undefined && (
-                                            <div className="pt-2 border-t border-[var(--border)] mt-2">
-                                                <p className="text-xs text-gray-500 font-bold mb-2">Live Results ({poll.totalVotes} votes)</p>
-                                                <div className="space-y-1.5">
-                                                    {poll.options.map(opt => {
-                                                        const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0;
-                                                        return (
-                                                            <div key={'res_' + opt._id} className="text-xs text-[var(--text-dark)] flex justify-between items-center bg-[var(--background)] px-2 py-1.5 rounded-lg border border-[var(--border)] relative overflow-hidden">
-                                                                <div className="absolute left-0 top-0 bottom-0 bg-[var(--primary)] opacity-10" style={{ width: `${pct}%` }}></div>
-                                                                <span className="relative z-10 w-2/3 truncate pr-2">{opt.text}</span>
-                                                                <span className="relative z-10 font-bold w-1/3 text-right">{opt.votes} ({pct}%)</span>
-                                                            </div>
-                                                        );
-                                                    })}
+                                            {poll.hasVoted ? (
+                                                <div className="bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                                                    <CheckCircle2 size={16} /> Thanks for voting!
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {poll.options.map(opt => (
+                                                        <button
+                                                            key={opt._id}
+                                                            onClick={() => handleVoteSurvey(poll._id, opt._id)}
+                                                            className="w-full text-left px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold text-[var(--text-dark)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-smooth"
+                                                        >
+                                                            {opt.text}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Admin Results View */}
+                                            {user?.role === 'admin' && poll.totalVotes !== undefined && (
+                                                <div className="pt-2 border-t border-[var(--border)] mt-2">
+                                                    <p className="text-xs text-gray-500 font-bold mb-2">Live Results ({poll.totalVotes} votes)</p>
+                                                    <div className="space-y-1.5">
+                                                        {poll.options.map(opt => {
+                                                            const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0;
+                                                            return (
+                                                                <div key={'res_' + opt._id} className="text-xs text-[var(--text-dark)] flex justify-between items-center bg-[var(--background)] px-2 py-1.5 rounded-lg border border-[var(--border)] relative overflow-hidden">
+                                                                    <div className="absolute left-0 top-0 bottom-0 bg-[var(--primary)] opacity-10" style={{ width: `${pct}%` }}></div>
+                                                                    <span className="relative z-10 w-2/3 truncate pr-2">{opt.text}</span>
+                                                                    <span className="relative z-10 font-bold w-1/3 text-right">{opt.votes} ({pct}%)</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )
+                    }
 
                     <div className="glass-card p-6 border border-[var(--border)] space-y-4">
                         <h3 className="text-xl font-bold flex items-center gap-2">
@@ -752,36 +820,38 @@ const Dashboard = () => {
                         </button>
                     </div>
 
-                    {user?.role === 'admin' && (
-                        <div className="dark-card p-6 border border-[var(--border)] premium-shadow">
-                            <h3 className="text-xl font-bold mb-4">Content Studio</h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                <button onClick={() => setShowAnnouncementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
-                                    <Mail size={18} />
-                                    <span className="text-sm font-bold">Post Announcement</span>
-                                </button>
-                                <button onClick={() => setShowEngagementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
-                                    <FileText size={18} />
-                                    <span className="text-sm font-bold">Post Engagement Content</span>
-                                </button>
-                                <button onClick={() => setShowNewsletterModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
-                                    <Newspaper size={18} />
-                                    <span className="text-sm font-bold">Send Newsletter</span>
-                                </button>
-                                <button onClick={() => setShowEventModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
-                                    <CalendarDays size={18} />
-                                    <span className="text-sm font-bold">Event Invitation / Reminder</span>
-                                </button>
-                                <button onClick={() => setShowSurveyModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
-                                    <BarChart2 size={18} />
-                                    <span className="text-sm font-bold">Post Poll / Survey</span>
-                                </button>
-                            </div>
+                    {
+                        user?.role === 'admin' && (
+                            <div className="dark-card p-6 border border-[var(--border)] premium-shadow">
+                                <h3 className="text-xl font-bold mb-4">Content Studio</h3>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button onClick={() => setShowAnnouncementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                        <Mail size={18} />
+                                        <span className="text-sm font-bold">Post Announcement</span>
+                                    </button>
+                                    <button onClick={() => setShowEngagementModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                        <FileText size={18} />
+                                        <span className="text-sm font-bold">Post Engagement Content</span>
+                                    </button>
+                                    <button onClick={() => setShowNewsletterModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                        <Newspaper size={18} />
+                                        <span className="text-sm font-bold">Send Newsletter</span>
+                                    </button>
+                                    <button onClick={() => setShowEventModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                        <CalendarDays size={18} />
+                                        <span className="text-sm font-bold">Event Invitation / Reminder</span>
+                                    </button>
+                                    <button onClick={() => setShowSurveyModal(true)} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-smooth text-left w-full">
+                                        <BarChart2 size={18} />
+                                        <span className="text-sm font-bold">Post Poll / Survey</span>
+                                    </button>
+                                </div>
 
-                        </div>
-                    )}
-                </div>
-            </div>
+                            </div>
+                        )
+                    }
+                </div >
+            </div >
 
             {/* Announcement Modal */}
             {
@@ -837,340 +907,348 @@ const Dashboard = () => {
             }
 
             {/* Engagement Post Modal */}
-            {showEngagementModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
-                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
-                            <div>
-                                <h2 className="text-2xl font-bold text-[var(--primary)]">Post Engagement Content</h2>
-                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Will appear on the community blog feed</p>
-                            </div>
-                            <button onClick={() => setShowEngagementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handlePostEngagement} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Title</label>
-                                <input
-                                    required
-                                    type="text"
-                                    placeholder="Enter a catchy title..."
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
-                                    value={engagementPost.title}
-                                    onChange={(e) => setEngagementPost({ ...engagementPost, title: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold">Category</label>
-                                    <select
-                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
-                                        value={engagementPost.category}
-                                        onChange={(e) => setEngagementPost({ ...engagementPost, category: e.target.value })}
-                                    >
-                                        {['General', 'Career', 'Tech', 'Events', 'Opportunities', 'Community'].map(c => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
+            {
+                showEngagementModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                        <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                            <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-[var(--primary)]">Post Engagement Content</h2>
+                                    <p className="text-sm text-[var(--text-light)]/60 mt-1">Will appear on the community blog feed</p>
                                 </div>
+                                <button onClick={() => setShowEngagementModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
+                            </div>
+                            <form onSubmit={handlePostEngagement} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold">Audience</label>
-                                    <select
+                                    <label className="text-sm font-bold">Title</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="Enter a catchy title..."
                                         className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
-                                        value={engagementPost.targetRole}
-                                        onChange={(e) => setEngagementPost({ ...engagementPost, targetRole: e.target.value })}
-                                    >
-                                        <option value="all">🌐 All Users</option>
-                                        <option value="alumni">🎓 Alumni Only</option>
-                                        <option value="student">📚 Students Only</option>
-                                    </select>
+                                        value={engagementPost.title}
+                                        onChange={(e) => setEngagementPost({ ...engagementPost, title: e.target.value })}
+                                    />
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Content</label>
-                                <textarea
-                                    required
-                                    rows="5"
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium text-[var(--text-dark)]"
-                                    placeholder="Write your post content here..."
-                                    value={engagementPost.content}
-                                    onChange={(e) => setEngagementPost({ ...engagementPost, content: e.target.value })}
-                                />
-                            </div>
-                            {/* Image Upload */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold flex items-center gap-2"><ImageIcon size={14} /> Cover Image <span className="text-gray-400 font-normal">(optional)</span></label>
-                                {imagePreview ? (
-                                    <div className="relative rounded-xl overflow-hidden border border-[var(--border)]">
-                                        <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setEngagementImage(null); setImagePreview(null); }}
-                                            className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-lg hover:bg-black/80 transition-smooth"
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold">Category</label>
+                                        <select
+                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
+                                            value={engagementPost.category}
+                                            onChange={(e) => setEngagementPost({ ...engagementPost, category: e.target.value })}
                                         >
-                                            <X size={14} />
-                                        </button>
+                                            {['General', 'Career', 'Tech', 'Events', 'Opportunities', 'Community'].map(c => (
+                                                <option key={c} value={c}>{c}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                ) : (
-                                    <label className="flex flex-col items-center justify-center w-full h-28 bg-[var(--background)] border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:bg-[var(--accent)] transition-smooth group">
-                                        <Upload size={22} className="text-gray-400 group-hover:text-[var(--primary)] mb-1 transition-smooth" />
-                                        <span className="text-xs text-gray-400 group-hover:text-[var(--primary)] font-medium transition-smooth">Click to upload image</span>
-                                        <span className="text-[11px] text-gray-400 opacity-50">JPG, PNG, WEBP — max 5MB</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    setEngagementImage(file);
-                                                    setImagePreview(URL.createObjectURL(file));
-                                                }
-                                            }}
-                                        />
-                                    </label>
-                                )}
-                            </div>
-                            <button
-                                disabled={isPostingEngagement}
-                                type="submit"
-                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPostingEngagement ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}
-                            >
-                                {isPostingEngagement ? (
-                                    <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Publishing...</>
-                                ) : (
-                                    <><FileText size={20} /> Publish Post</>
-                                )}
-                            </button>
-                        </form>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold">Audience</label>
+                                        <select
+                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
+                                            value={engagementPost.targetRole}
+                                            onChange={(e) => setEngagementPost({ ...engagementPost, targetRole: e.target.value })}
+                                        >
+                                            <option value="all">🌐 All Users</option>
+                                            <option value="alumni">🎓 Alumni Only</option>
+                                            <option value="student">📚 Students Only</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Content</label>
+                                    <textarea
+                                        required
+                                        rows="5"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium text-[var(--text-dark)]"
+                                        placeholder="Write your post content here..."
+                                        value={engagementPost.content}
+                                        onChange={(e) => setEngagementPost({ ...engagementPost, content: e.target.value })}
+                                    />
+                                </div>
+                                {/* Image Upload */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold flex items-center gap-2"><ImageIcon size={14} /> Cover Image <span className="text-gray-400 font-normal">(optional)</span></label>
+                                    {imagePreview ? (
+                                        <div className="relative rounded-xl overflow-hidden border border-[var(--border)]">
+                                            <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => { setEngagementImage(null); setImagePreview(null); }}
+                                                className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-lg hover:bg-black/80 transition-smooth"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="flex flex-col items-center justify-center w-full h-28 bg-[var(--background)] border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:bg-[var(--accent)] transition-smooth group">
+                                            <Upload size={22} className="text-gray-400 group-hover:text-[var(--primary)] mb-1 transition-smooth" />
+                                            <span className="text-xs text-gray-400 group-hover:text-[var(--primary)] font-medium transition-smooth">Click to upload image</span>
+                                            <span className="text-[11px] text-gray-400 opacity-50">JPG, PNG, WEBP — max 5MB</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        setEngagementImage(file);
+                                                        setImagePreview(URL.createObjectURL(file));
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                                <button
+                                    disabled={isPostingEngagement}
+                                    type="submit"
+                                    className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPostingEngagement ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}
+                                >
+                                    {isPostingEngagement ? (
+                                        <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Publishing...</>
+                                    ) : (
+                                        <><FileText size={20} /> Publish Post</>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Newsletter Modal */}
-            {showNewsletterModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
-                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
-                            <div>
-                                <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><Newspaper size={22} /> Send Newsletter</h2>
-                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Delivered as an in-app notification</p>
-                            </div>
-                            <button onClick={() => setShowNewsletterModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handleSendNewsletter} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Subject / Headline</label>
-                                <input required type="text" placeholder="e.g. Monthly Alumni Update — February 2026"
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
-                                    value={newsletter.subject}
-                                    onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Body</label>
-                                <textarea required rows="5" placeholder="Write the newsletter content here..."
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium text-[var(--text-dark)]"
-                                    value={newsletter.body}
-                                    onChange={(e) => setNewsletter({ ...newsletter, body: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Target Audience</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
-                                        <button key={value} type="button"
-                                            onClick={() => setNewsletter({ ...newsletter, targetRole: value })}
-                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${newsletter.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
-                                        >{label}</button>
-                                    ))}
+            {
+                showNewsletterModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                        <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                            <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><Newspaper size={22} /> Send Newsletter</h2>
+                                    <p className="text-sm text-[var(--text-light)]/60 mt-1">Delivered as an in-app notification</p>
                                 </div>
+                                <button onClick={() => setShowNewsletterModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                             </div>
-                            <button disabled={isSendingNewsletter} type="submit"
-                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingNewsletter ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
-                                {isSendingNewsletter ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><Newspaper size={20} /> Send Newsletter</>}
-                            </button>
-                        </form>
+                            <form onSubmit={handleSendNewsletter} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Subject / Headline</label>
+                                    <input required type="text" placeholder="e.g. Monthly Alumni Update — February 2026"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
+                                        value={newsletter.subject}
+                                        onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Body</label>
+                                    <textarea required rows="5" placeholder="Write the newsletter content here..."
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none resize-none font-medium text-[var(--text-dark)]"
+                                        value={newsletter.body}
+                                        onChange={(e) => setNewsletter({ ...newsletter, body: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Target Audience</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
+                                            <button key={value} type="button"
+                                                onClick={() => setNewsletter({ ...newsletter, targetRole: value })}
+                                                className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${newsletter.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
+                                            >{label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button disabled={isSendingNewsletter} type="submit"
+                                    className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingNewsletter ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                    {isSendingNewsletter ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><Newspaper size={20} /> Send Newsletter</>}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Event Invitation / Reminder Modal */}
-            {showEventModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
-                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
-                            <div>
-                                <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><CalendarDays size={22} /> {eventData.isReminder ? 'Event Reminder' : 'Event Invitation'}</h2>
-                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Sent as an in-app notification to selected audience</p>
+            {
+                showEventModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                        <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                            <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><CalendarDays size={22} /> {eventData.isReminder ? 'Event Reminder' : 'Event Invitation'}</h2>
+                                    <p className="text-sm text-[var(--text-light)]/60 mt-1">Sent as an in-app notification to selected audience</p>
+                                </div>
+                                <button onClick={() => setShowEventModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                             </div>
-                            <button onClick={() => setShowEventModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handleSendEvent} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
-                            {/* Invitation vs Reminder toggle */}
-                            <div className="flex gap-3">
-                                {[{ val: false, label: '🎉 Invitation' }, { val: true, label: '🔔 Reminder' }].map(({ val, label }) => (
-                                    <button key={String(val)} type="button"
-                                        onClick={() => setEventData({ ...eventData, isReminder: val })}
-                                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-smooth ${eventData.isReminder === val ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
-                                    >{label}</button>
-                                ))}
-                            </div>
-                            {/* Select from existing events */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Select Event</label>
-                                {isLoadingEvents ? (
-                                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl text-gray-400">
-                                        <div className="w-4 h-4 border-2 border-gray-300 border-t-[var(--primary)] rounded-full animate-spin"></div>
-                                        Loading events...
-                                    </div>
-                                ) : existingEvents.length === 0 ? (
-                                    <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
-                                        ⚠️ No events found. Create an event first from the Events page.
-                                    </div>
-                                ) : (
-                                    <select
-                                        required
-                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
-                                        value={eventData.selectedEventId}
-                                        onChange={(e) => setEventData({ ...eventData, selectedEventId: e.target.value })}
-                                    >
-                                        <option value="">-- Choose an event --</option>
-                                        {existingEvents.map(ev => (
-                                            <option key={ev._id} value={ev._id}>
-                                                {ev.title} — {new Date(ev.dateTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
-                            {/* Selected event preview card */}
-                            {eventData.selectedEventId && (() => {
-                                const ev = existingEvents.find(e => e._id === eventData.selectedEventId);
-                                if (!ev) return null;
-                                return (
-                                    <div className="p-4 bg-[var(--surface)] border-2 border-[var(--border)] rounded-2xl space-y-2 text-sm">
-                                        <p className="font-bold text-[var(--primary)] text-base">{ev.title}</p>
-                                        {ev.description && <p className="text-gray-500 line-clamp-2">{ev.description}</p>}
-                                        <div className="flex flex-wrap gap-3 text-gray-600">
-                                            {ev.dateTime && <span>🕐 {new Date(ev.dateTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>}
-                                            {ev.meetingType === 'online'
-                                                ? <span>💻 Online</span>
-                                                : ev.location && <span>📍 {ev.location}</span>}
-                                            {ev.speakerName && <span>🎤 {ev.speakerName}</span>}
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Target Audience</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
-                                        <button key={value} type="button"
-                                            onClick={() => setEventData({ ...eventData, targetRole: value, specificUser: '' })}
-                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${eventData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
+                            <form onSubmit={handleSendEvent} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                                {/* Invitation vs Reminder toggle */}
+                                <div className="flex gap-3">
+                                    {[{ val: false, label: '🎉 Invitation' }, { val: true, label: '🔔 Reminder' }].map(({ val, label }) => (
+                                        <button key={String(val)} type="button"
+                                            onClick={() => setEventData({ ...eventData, isReminder: val })}
+                                            className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-smooth ${eventData.isReminder === val ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
                                         >{label}</button>
                                     ))}
                                 </div>
-                            </div>
-                            {/* Individual Alumni Dropdown */}
-                            {eventData.targetRole === 'alumni' && (
-                                <div className="space-y-2 animate-fade-in">
-                                    <label className="text-sm font-bold text-[var(--text-dark)]/80">Select Specific Alumni (Optional)</label>
-                                    <select
-                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] text-sm font-medium text-[var(--text-dark)]"
-                                        value={eventData.specificUser}
-                                        onChange={(e) => setEventData({ ...eventData, specificUser: e.target.value })}
-                                    >
-                                        <option value="">All Alumni</option>
-                                        {existingAlumni.map(alum => (
-                                            <option key={alum.user._id} value={alum.user._id}>
-                                                {alum.user.name} ({alum.user.email})
-                                            </option>
-                                        ))}
-                                    </select>
+                                {/* Select from existing events */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Select Event</label>
+                                    {isLoadingEvents ? (
+                                        <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-[var(--border)] rounded-xl text-gray-400">
+                                            <div className="w-4 h-4 border-2 border-gray-300 border-t-[var(--primary)] rounded-full animate-spin"></div>
+                                            Loading events...
+                                        </div>
+                                    ) : existingEvents.length === 0 ? (
+                                        <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
+                                            ⚠️ No events found. Create an event first from the Events page.
+                                        </div>
+                                    ) : (
+                                        <select
+                                            required
+                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
+                                            value={eventData.selectedEventId}
+                                            onChange={(e) => setEventData({ ...eventData, selectedEventId: e.target.value })}
+                                        >
+                                            <option value="">-- Choose an event --</option>
+                                            {existingEvents.map(ev => (
+                                                <option key={ev._id} value={ev._id}>
+                                                    {ev.title} — {new Date(ev.dateTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
-                            )}
-                            <button disabled={isSendingEvent} type="submit"
-                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingEvent ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
-                                {isSendingEvent ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><CalendarDays size={20} /> Send {eventData.isReminder ? 'Reminder' : 'Invitation'}</>}
-                            </button>
-                        </form>
+                                {/* Selected event preview card */}
+                                {eventData.selectedEventId && (() => {
+                                    const ev = existingEvents.find(e => e._id === eventData.selectedEventId);
+                                    if (!ev) return null;
+                                    return (
+                                        <div className="p-4 bg-[var(--surface)] border-2 border-[var(--border)] rounded-2xl space-y-2 text-sm">
+                                            <p className="font-bold text-[var(--primary)] text-base">{ev.title}</p>
+                                            {ev.description && <p className="text-gray-500 line-clamp-2">{ev.description}</p>}
+                                            <div className="flex flex-wrap gap-3 text-gray-600">
+                                                {ev.dateTime && <span>🕐 {new Date(ev.dateTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>}
+                                                {ev.meetingType === 'online'
+                                                    ? <span>💻 Online</span>
+                                                    : ev.location && <span>📍 {ev.location}</span>}
+                                                {ev.speakerName && <span>🎤 {ev.speakerName}</span>}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Target Audience</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
+                                            <button key={value} type="button"
+                                                onClick={() => setEventData({ ...eventData, targetRole: value, specificUser: '' })}
+                                                className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${eventData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
+                                            >{label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Individual Alumni Dropdown */}
+                                {eventData.targetRole === 'alumni' && (
+                                    <div className="space-y-2 animate-fade-in">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80">Select Specific Alumni (Optional)</label>
+                                        <select
+                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] text-sm font-medium text-[var(--text-dark)]"
+                                            value={eventData.specificUser}
+                                            onChange={(e) => setEventData({ ...eventData, specificUser: e.target.value })}
+                                        >
+                                            <option value="">All Alumni</option>
+                                            {existingAlumni.map(alum => (
+                                                <option key={alum.user._id} value={alum.user._id}>
+                                                    {alum.user.name} ({alum.user.email})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <button disabled={isSendingEvent} type="submit"
+                                    className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isSendingEvent ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                    {isSendingEvent ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Sending...</> : <><CalendarDays size={20} /> Send {eventData.isReminder ? 'Reminder' : 'Invitation'}</>}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Post Poll / Survey Modal */}
-            {showSurveyModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
-                    <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
-                        <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
-                            <div>
-                                <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><BarChart2 size={22} /> Post Poll / Survey</h2>
-                                <p className="text-sm text-[var(--text-light)]/60 mt-1">Users can vote on their dashboard</p>
+            {
+                showSurveyModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[101] flex items-center justify-center p-4">
+                        <div className="bg-[var(--surface)] rounded-[32px] w-full max-w-lg premium-shadow overflow-hidden text-left animate-scale-in flex flex-col max-h-[90vh]">
+                            <div className="p-8 bg-[var(--surface)] border-b border-[var(--border)] flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-[var(--primary)] flex items-center gap-2"><BarChart2 size={22} /> Post Poll / Survey</h2>
+                                    <p className="text-sm text-[var(--text-light)]/60 mt-1">Users can vote on their dashboard</p>
+                                </div>
+                                <button onClick={() => setShowSurveyModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
                             </div>
-                            <button onClick={() => setShowSurveyModal(false)} className="p-2 hover:bg-[var(--accent)] rounded-lg transition-smooth"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handlePostSurvey} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Question</label>
-                                <input required type="text" placeholder="e.g. What should be the theme for the next meetup?"
-                                    className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-lg text-[var(--text-dark)]"
-                                    value={surveyData.question}
-                                    onChange={(e) => setSurveyData({ ...surveyData, question: e.target.value })}
-                                />
-                            </div>
+                            <form onSubmit={handlePostSurvey} className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Question</label>
+                                    <input required type="text" placeholder="e.g. What should be the theme for the next meetup?"
+                                        className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-lg text-[var(--text-dark)]"
+                                        value={surveyData.question}
+                                        onChange={(e) => setSurveyData({ ...surveyData, question: e.target.value })}
+                                    />
+                                </div>
 
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold flex justify-between items-center">
-                                    <span>Options</span>
-                                    {surveyData.options.length < 6 && (
-                                        <button type="button"
-                                            onClick={() => setSurveyData({ ...surveyData, options: [...surveyData.options, ''] })}
-                                            className="text-xs text-[var(--primary)] font-bold hover:underline"
-                                        >+ Add Option</button>
-                                    )}
-                                </label>
-                                {surveyData.options.map((opt, idx) => (
-                                    <div key={idx} className="flex gap-2 items-center relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-[var(--border)] pointer-events-none"></div>
-                                        <input required type="text" placeholder={`Option ${idx + 1}`}
-                                            className="w-full pl-10 pr-4 py-2.5 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
-                                            value={opt}
-                                            onChange={(e) => {
-                                                const newOps = [...surveyData.options];
-                                                newOps[idx] = e.target.value;
-                                                setSurveyData({ ...surveyData, options: newOps });
-                                            }}
-                                        />
-                                        {surveyData.options.length > 2 && (
-                                            <button type="button" onClick={() => {
-                                                const newOps = surveyData.options.filter((_, i) => i !== idx);
-                                                setSurveyData({ ...surveyData, options: newOps });
-                                            }} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-smooth"><X size={16} /></button>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold flex justify-between items-center">
+                                        <span>Options</span>
+                                        {surveyData.options.length < 6 && (
+                                            <button type="button"
+                                                onClick={() => setSurveyData({ ...surveyData, options: [...surveyData.options, ''] })}
+                                                className="text-xs text-[var(--primary)] font-bold hover:underline"
+                                            >+ Add Option</button>
                                         )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Target Audience</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
-                                        <button key={value} type="button"
-                                            onClick={() => setSurveyData({ ...surveyData, targetRole: value })}
-                                            className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${surveyData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
-                                        >{label}</button>
+                                    </label>
+                                    {surveyData.options.map((opt, idx) => (
+                                        <div key={idx} className="flex gap-2 items-center relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-[var(--border)] pointer-events-none"></div>
+                                            <input required type="text" placeholder={`Option ${idx + 1}`}
+                                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none font-medium text-[var(--text-dark)]"
+                                                value={opt}
+                                                onChange={(e) => {
+                                                    const newOps = [...surveyData.options];
+                                                    newOps[idx] = e.target.value;
+                                                    setSurveyData({ ...surveyData, options: newOps });
+                                                }}
+                                            />
+                                            {surveyData.options.length > 2 && (
+                                                <button type="button" onClick={() => {
+                                                    const newOps = surveyData.options.filter((_, i) => i !== idx);
+                                                    setSurveyData({ ...surveyData, options: newOps });
+                                                }} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-smooth"><X size={16} /></button>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
-                            </div>
-                            <button disabled={isPostingSurvey} type="submit"
-                                className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPostingSurvey ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
-                                {isPostingSurvey ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Publishing...</> : <><BarChart2 size={20} /> Publish Poll</>}
-                            </button>
-                        </form>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Target Audience</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[{ value: 'all', label: '🌐 All Users' }, { value: 'alumni', label: '🎓 Alumni Only' }, { value: 'student', label: '📚 Students Only' }].map(({ value, label }) => (
+                                            <button key={value} type="button"
+                                                onClick={() => setSurveyData({ ...surveyData, targetRole: value })}
+                                                className={`p-3 rounded-xl border font-bold text-sm transition-smooth text-center ${surveyData.targetRole === value ? 'bg-[var(--primary)] text-white border-[var(--primary)]' : 'bg-[var(--background)] text-[var(--text-light)] border-[var(--border)] hover:border-[var(--primary)]'}`}
+                                            >{label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button disabled={isPostingSurvey} type="submit"
+                                    className={`w-full py-4 bg-[var(--primary)] text-white rounded-xl font-bold premium-shadow transition-smooth flex items-center justify-center gap-2 ${isPostingSurvey ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'}`}>
+                                    {isPostingSurvey ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Publishing...</> : <><BarChart2 size={20} /> Publish Poll</>}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {
                 showUsersModal && (
@@ -1261,127 +1339,129 @@ const Dashboard = () => {
             />
 
             {/* Spotlight Modal */}
-            {showSpotlightModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
-                    <div className="bg-[var(--surface)] rounded-[32px] max-w-2xl w-full premium-shadow relative my-8 flex flex-col max-h-[90vh] overflow-hidden">
-                        <button onClick={() => setShowSpotlightModal(false)} className="absolute top-6 right-6 p-2 hover:bg-[var(--background)] rounded-full transition-smooth z-10">
-                            <X size={24} className="text-[var(--text-light)]/60" />
-                        </button>
+            {
+                showSpotlightModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+                        <div className="bg-[var(--surface)] rounded-[32px] max-w-2xl w-full premium-shadow relative my-8 flex flex-col max-h-[90vh] overflow-hidden">
+                            <button onClick={() => setShowSpotlightModal(false)} className="absolute top-6 right-6 p-2 hover:bg-[var(--background)] rounded-full transition-smooth z-10">
+                                <X size={24} className="text-[var(--text-light)]/60" />
+                            </button>
 
-                        <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
-                            <div className="text-center space-y-4 mb-8">
-                                <div className="w-16 h-16 bg-[var(--background)] text-[var(--primary)] rounded-2xl flex items-center justify-center mx-auto border border-[var(--border)]">
-                                    <Star size={32} />
-                                </div>
-                                <h2 className="text-3xl font-black text-[var(--primary)]">Manage Spotlight Story</h2>
-                                <p className="text-[var(--text-light)]/70 font-medium">This story will be featured prominently on the landing page.</p>
-                            </div>
-
-                            <form onSubmit={handleUpdateSpotlight} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Featured Title</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={spotlightData.title}
-                                            onChange={(e) => setSpotlightData({ ...spotlightData, title: e.target.value })}
-                                            placeholder="e.g. From Campus Lead to CTO"
-                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
-                                        />
+                            <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
+                                <div className="text-center space-y-4 mb-8">
+                                    <div className="w-16 h-16 bg-[var(--background)] text-[var(--primary)] rounded-2xl flex items-center justify-center mx-auto border border-[var(--border)]">
+                                        <Star size={32} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Author Name</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={spotlightData.authorName}
-                                            onChange={(e) => setSpotlightData({ ...spotlightData, authorName: e.target.value })}
-                                            placeholder="e.g. Sarah Johnson"
-                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
-                                        />
-                                    </div>
+                                    <h2 className="text-3xl font-black text-[var(--primary)]">Manage Spotlight Story</h2>
+                                    <p className="text-[var(--text-light)]/70 font-medium">This story will be featured prominently on the landing page.</p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Author Role/Subtitle</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={spotlightData.authorRole}
-                                        onChange={(e) => setSpotlightData({ ...spotlightData, authorRole: e.target.value })}
-                                        placeholder="e.g. CTO at TechFlow, Class of 2018"
-                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Impactful Quote</label>
-                                    <textarea
-                                        required
-                                        value={spotlightData.quote}
-                                        onChange={(e) => setSpotlightData({ ...spotlightData, quote: e.target.value })}
-                                        placeholder="A powerful one-liner..."
-                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
-                                        rows="2"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Brief Description</label>
-                                    <textarea
-                                        required
-                                        value={spotlightData.description}
-                                        onChange={(e) => setSpotlightData({ ...spotlightData, description: e.target.value })}
-                                        placeholder="Elaborate on their journey..."
-                                        className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
-                                        rows="3"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Cover Image</label>
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-24 h-24 rounded-2xl bg-[var(--background)] border-2 border-dashed border-[var(--border)] overflow-hidden flex items-center justify-center shrink-0">
-                                            {spotlightPreview ? (
-                                                <img src={spotlightPreview} className="w-full h-full object-cover" alt="Preview" />
-                                            ) : (
-                                                <ImageIcon className="text-[var(--text-light)]/30" size={32} />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 space-y-2">
+                                <form onSubmit={handleUpdateSpotlight} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Featured Title</label>
                                             <input
-                                                type="file"
-                                                className="hidden"
-                                                id="spotlight-image"
-                                                accept="image/*"
-                                                onChange={(e) => {
-                                                    const file = e.target.files[0];
-                                                    if (file) {
-                                                        setSpotlightImage(file);
-                                                        setSpotlightPreview(URL.createObjectURL(file));
-                                                    }
-                                                }}
+                                                type="text"
+                                                required
+                                                value={spotlightData.title}
+                                                onChange={(e) => setSpotlightData({ ...spotlightData, title: e.target.value })}
+                                                placeholder="e.g. From Campus Lead to CTO"
+                                                className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
                                             />
-                                            <label htmlFor="spotlight-image" className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--background)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold cursor-pointer hover:bg-[var(--accent)] transition-smooth text-sm">
-                                                <Upload size={18} /> Upload Story Image
-                                            </label>
-                                            <p className="text-[10px] text-[var(--text-light)]/40 font-medium">Recommended: High resolution. Max 5MB.</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Author Name</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={spotlightData.authorName}
+                                                onChange={(e) => setSpotlightData({ ...spotlightData, authorName: e.target.value })}
+                                                placeholder="e.g. Sarah Johnson"
+                                                className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                            />
                                         </div>
                                     </div>
-                                </div>
 
-                                <button
-                                    disabled={isUpdatingSpotlight}
-                                    className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-lg hover:scale-[1.02] transition-smooth disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20"
-                                >
-                                    {isUpdatingSpotlight ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Update Landing Page Spotlight
-                                </button>
-                            </form>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Author Role/Subtitle</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={spotlightData.authorRole}
+                                            onChange={(e) => setSpotlightData({ ...spotlightData, authorRole: e.target.value })}
+                                            placeholder="e.g. CTO at TechFlow, Class of 2018"
+                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Impactful Quote</label>
+                                        <textarea
+                                            required
+                                            value={spotlightData.quote}
+                                            onChange={(e) => setSpotlightData({ ...spotlightData, quote: e.target.value })}
+                                            placeholder="A powerful one-liner..."
+                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                            rows="2"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Brief Description</label>
+                                        <textarea
+                                            required
+                                            value={spotlightData.description}
+                                            onChange={(e) => setSpotlightData({ ...spotlightData, description: e.target.value })}
+                                            placeholder="Elaborate on their journey..."
+                                            className="w-full px-6 py-4 bg-[var(--background)] border-2 border-[var(--border)] focus:border-[var(--primary)] rounded-2xl outline-none transition-smooth font-medium text-[var(--text-dark)] placeholder:text-[var(--text-light)]/30"
+                                            rows="3"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-[var(--text-dark)]/80 ml-1">Cover Image</label>
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-24 h-24 rounded-2xl bg-[var(--background)] border-2 border-dashed border-[var(--border)] overflow-hidden flex items-center justify-center shrink-0">
+                                                {spotlightPreview ? (
+                                                    <img src={spotlightPreview} className="w-full h-full object-cover" alt="Preview" />
+                                                ) : (
+                                                    <ImageIcon className="text-[var(--text-light)]/30" size={32} />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    id="spotlight-image"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            setSpotlightImage(file);
+                                                            setSpotlightPreview(URL.createObjectURL(file));
+                                                        }
+                                                    }}
+                                                />
+                                                <label htmlFor="spotlight-image" className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--background)] text-[var(--primary)] border border-[var(--border)] rounded-xl font-bold cursor-pointer hover:bg-[var(--accent)] transition-smooth text-sm">
+                                                    <Upload size={18} /> Upload Story Image
+                                                </label>
+                                                <p className="text-[10px] text-[var(--text-light)]/40 font-medium">Recommended: High resolution. Max 5MB.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        disabled={isUpdatingSpotlight}
+                                        className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-lg hover:scale-[1.02] transition-smooth disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20"
+                                    >
+                                        {isUpdatingSpotlight ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Update Landing Page Spotlight
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div >
     );
 };

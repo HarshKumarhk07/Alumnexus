@@ -36,6 +36,11 @@ const studentProfileSchema = new mongoose.Schema({
     profilePhoto: {
         type: String,
         default: 'no-photo.jpg'
+    },
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
     }
 }, {
     timestamps: true

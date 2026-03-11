@@ -150,6 +150,7 @@ export const adminService = {
     sendBulkEmail: (data) => API.post('/admin/bulk-email', data),
     deleteUser: (id) => API.delete(`/admin/users/${id}`),
     updateUserStatus: (id, data) => API.put(`/admin/users/status/${id}`, data),
+    addStudent: (data) => API.post('/admin/add-student', data),
     exportStudents: () => API.get('/admin/export-students', { responseType: 'blob' }),
     getSpotlight: () => API.get('/admin/spotlight'),
     updateSpotlight: (data) => {
@@ -157,7 +158,9 @@ export const adminService = {
             return API.post('/admin/spotlight', data, { headers: { 'Content-Type': 'multipart/form-data' } });
         }
         return API.post('/admin/spotlight', data);
-    }
+    },
+    getPendingStudents: () => API.get('/admin/pending-students'),
+    verifyStudent: (id, status) => API.put(`/admin/verify-student/${id}`, { status })
 };
 
 export const notificationService = {

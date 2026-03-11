@@ -136,7 +136,7 @@ const Queries = () => {
                             : "Help students navigate their careers by answering their questions."}
                     </p>
                 </div>
-                {user.role === 'student' && (
+                {(user.role === 'student' && user.isVerified) && (
                     <button
                         onClick={() => setShowQueryModal(true)}
                         className="px-8 py-4 bg-[var(--primary)] text-white rounded-2xl font-bold premium-shadow hover:scale-105 transition-smooth flex items-center gap-2 z-10"
@@ -144,6 +144,11 @@ const Queries = () => {
                         <MessageCircle size={20} />
                         Ask a Question
                     </button>
+                )}
+                {(user.role === 'student' && !user.isVerified) && (
+                    <div className="bg-amber-50 border border-amber-200 px-6 py-4 rounded-2xl text-amber-700 text-sm font-bold flex items-center gap-2 z-10">
+                        <Clock size={18} /> Verification Pending
+                    </div>
                 )}
             </div>
 

@@ -8,10 +8,11 @@ const sendTokenResponse = async (user, statusCode, res) => {
         expiresIn: process.env.JWT_EXPIRE
     });
 
-    let verificationStatus = undefined;
-    if (user.role === 'alumni') {
-        const AlumniProfile = require('../models/alumniProfile.model');
-        const profile = await AlumniProfile.findOne({ user: user._id });
+    if (user.role === 'alumni' || user.role === 'student') {
+        const Model = user.role === 'alumni'
+            ? require('../models/alumniProfile.model')
+            : require('../models/studentProfile.model');
+        const profile = await Model.findOne({ user: user._id });
         if (profile) {
             verificationStatus = profile.verificationStatus;
         }
@@ -108,7 +109,8 @@ exports.register = async (req, res, next) => {
                 linkedin: linkedin || '',
                 github: github || '',
                 careerInterest: careerInterest || '',
-                resumeURL: req.file ? req.file.path : ''
+                resumeURL: req.file ? req.file.path : '',
+                verificationStatus: 'pending'
             });
         }
 
@@ -173,10 +175,11 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
     const user = await User.findById(req.user.id).lean();
 
-    let verificationStatus = undefined;
-    if (user && user.role === 'alumni') {
-        const AlumniProfile = require('../models/alumniProfile.model');
-        const profile = await AlumniProfile.findOne({ user: user._id }).lean();
+    if (user && (user.role === 'alumni' || user.role === 'student')) {
+        const Model = user.role === 'alumni'
+            ? require('../models/alumniProfile.model')
+            : require('../models/studentProfile.model');
+        const profile = await Model.findOne({ user: user._id }).lean();
         if (profile) {
             verificationStatus = profile.verificationStatus;
         }

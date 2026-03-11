@@ -44,12 +44,12 @@ exports.authorize = (...roles) => {
     };
 };
 
-// Require verified status for alumni
+// Require verified status for alumni and students
 exports.requireVerified = (req, res, next) => {
-    if (req.user.role === 'alumni' && !req.user.isVerified) {
+    if ((req.user.role === 'alumni' || req.user.role === 'student') && !req.user.isVerified) {
         return res.status(403).json({
             success: false,
-            message: 'Your alumni profile is pending verification. You cannot perform this action yet.'
+            message: `Your ${req.user.role} profile is pending verification. You cannot perform this action yet.`
         });
     }
     next();

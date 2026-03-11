@@ -22,6 +22,10 @@ const Navbar = () => {
         if (user) {
             fetchNotifications();
         }
+        // Reset all UI states when user changes (login/logout)
+        setIsProfileDropdownOpen(false);
+        setShowNotifications(false);
+        setIsMenuOpen(false);
     }, [user]);
 
     const fetchNotifications = async () => {

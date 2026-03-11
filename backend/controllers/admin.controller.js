@@ -19,6 +19,7 @@ exports.getStats = async (req, res) => {
         const totalStudents = await User.countDocuments({ role: 'student' });
         const totalAlumni = await User.countDocuments({ role: 'alumni' });
         const pendingAlumni = await AlumniProfile.countDocuments({ verificationStatus: 'pending' });
+        const pendingStudents = await StudentProfile.countDocuments({ verificationStatus: 'pending' });
         const totalJobs = await Job.countDocuments({ isActive: true });
 
         // Growth Trends (New items in last 30 days)
@@ -46,6 +47,7 @@ exports.getStats = async (req, res) => {
                 totalStudents,
                 totalAlumni,
                 pendingAlumni,
+                pendingStudents,
                 totalJobs,
                 trends: {
                     studentGrowth: `+${studentGrowth}%`,
@@ -152,11 +154,54 @@ exports.verifyAlumni = async (req, res) => {
                     `
                 });
             } catch (emailErr) {
-                console.error('Approval email failed to send:', emailErr.message);
+                console.error('Email sending failed:', emailErr);
             }
         }
 
         res.status(200).json({ success: true, data: profile });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Verify Student Profile
+// @route   PUT /api/admin/verify-student/:id
+// @access  Private/Admin
+exports.verifyStudent = async (req, res) => {
+    try {
+        const { status } = req.body; // 'approved' or 'rejected'
+        const profile = await StudentProfile.findByIdAndUpdate(req.params.id, { verificationStatus: status }, { new: true });
+
+        if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
+
+        // Update user's isVerified status if approved
+        if (status === 'approved') {
+            await User.findByIdAndUpdate(profile.user, { isVerified: true });
+
+            // Send Notification
+            await Notification.create({
+                user: profile.user,
+                message: 'Your student profile has been approved! You can now access full platform features.',
+                type: 'info'
+            });
+        } else {
+            // If rejected, ensure isVerified is false
+            await User.findByIdAndUpdate(profile.user, { isVerified: false });
+        }
+
+        res.status(200).json({ success: true, data: profile });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Get Pending Students
+// @route   GET /api/admin/pending-students
+// @access  Private/Admin
+exports.getPendingStudents = async (req, res) => {
+    try {
+        const pending = await StudentProfile.find({ verificationStatus: 'pending' }).populate('user', 'name email');
+        res.status(200).json({ success: true, data: pending });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -385,6 +430,11 @@ exports.updateUserStatus = async (req, res) => {
             if (profile && status) {
                 await AlumniProfile.findByIdAndUpdate(profile._id, { verificationStatus: status }, { new: true });
             }
+        } else if (user.role === 'student') {
+            const profile = await StudentProfile.findOne({ user: user._id });
+            if (profile && status) {
+                await StudentProfile.findByIdAndUpdate(profile._id, { verificationStatus: status }, { new: true });
+            }
         }
 
         res.status(200).json({
@@ -397,4 +447,48 @@ exports.updateUserStatus = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+// @desc    Add Student manually by Admin
+// @route   POST /api/admin/add-student
+// @access  Private/Admin
+exports.addStudent = async (req, res) => {
+    try {
+        const { name, email, password, branch, year, careerInterest } = req.body;
 
+        // Check if user already exists
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ success: false, message: 'User already exists with this email' });
+        }
+
+        // Create user
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role: 'student',
+            isVerified: true // Admin added students are verified by default
+        });
+
+        // Create student profile
+        await StudentProfile.create({
+            user: user._id,
+            branch: branch || 'Not Specified',
+            year: year || 1,
+            careerInterest: careerInterest || '',
+            skills: [],
+            projects: []
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Student added successfully',
+            data: {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
