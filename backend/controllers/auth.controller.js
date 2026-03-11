@@ -8,6 +8,7 @@ const sendTokenResponse = async (user, statusCode, res) => {
         expiresIn: process.env.JWT_EXPIRE
     });
 
+    let verificationStatus = undefined;
     if (user.role === 'alumni' || user.role === 'student') {
         const Model = user.role === 'alumni'
             ? require('../models/alumniProfile.model')
@@ -161,6 +162,18 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        if (user.role === 'alumni' || user.role === 'student') {
+            const Model = user.role === 'alumni'
+                ? require('../models/alumniProfile.model')
+                : require('../models/studentProfile.model');
+            const profile = await Model.findOne({ user: user._id }).lean();
+
+            if (profile && profile.verificationStatus === 'rejected') {
+                console.log(`Login blocked for rejected ${user.role}: [${email}]`);
+                return res.status(403).json({ success: false, message: 'Your account access has been revoked. Please contact the administrator.' });
+            }
+        }
+
         console.log(`Login successful for: [${email}]`);
         await sendTokenResponse(user, 200, res);
     } catch (err) {
@@ -175,6 +188,7 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
     const user = await User.findById(req.user.id).lean();
 
+    let verificationStatus = undefined;
     if (user && (user.role === 'alumni' || user.role === 'student')) {
         const Model = user.role === 'alumni'
             ? require('../models/alumniProfile.model')

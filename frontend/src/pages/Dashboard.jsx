@@ -382,7 +382,7 @@ const Dashboard = () => {
         try {
             await adminService.updateUserStatus(id, {
                 isVerified,
-                status: currentRole === 'alumni' ? (isVerified ? 'approved' : 'rejected') : undefined
+                status: (currentRole === 'alumni' || currentRole === 'student') ? (isVerified ? 'approved' : 'rejected') : undefined
             });
             toast.success(`User ${isVerified ? 'verified' : 'revoked'} successfully`);
             // Refresh modal list
@@ -462,7 +462,7 @@ const Dashboard = () => {
             </div>
 
             {/* Verification Warning for Alumni & Students */}
-            {((user.role === 'alumni' || user.role === 'student') && !user.isVerified) && (
+            {((user.role === 'alumni' || user.role === 'student') && !user.isVerified && user.verificationStatus !== 'rejected') && (
                 <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-[32px] flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle">
                     <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
                         <ShieldAlert size={32} />
@@ -476,6 +476,24 @@ const Dashboard = () => {
                     </div>
                     <div className="px-6 py-2 bg-amber-100 text-amber-700 rounded-xl font-bold text-sm border border-amber-200">
                         Status: Pending Approval
+                    </div>
+                </div>
+            )}
+
+            {/* Revoked Warning for Alumni & Students */}
+            {((user.role === 'alumni' || user.role === 'student') && user.verificationStatus === 'rejected') && (
+                <div className="bg-red-50 border-2 border-red-200 p-6 rounded-[32px] flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle">
+                    <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 shrink-0">
+                        <ShieldAlert size={32} />
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h3 className="text-xl font-bold text-red-800">Account Access Revoked</h3>
+                        <p className="text-red-700 opacity-80 mt-1">
+                            Your {user.role} profile application has been rejected or your access has been revoked by our administrators.
+                        </p>
+                    </div>
+                    <div className="px-6 py-2 bg-red-100 text-red-700 rounded-xl font-bold text-sm border border-red-200">
+                        Status: Revoked
                     </div>
                 </div>
             )}
