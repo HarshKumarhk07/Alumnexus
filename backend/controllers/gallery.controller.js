@@ -62,6 +62,11 @@ exports.deleteMedia = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Media not found' });
         }
 
+        // Check if user is admin or the owner of the media
+        if (req.user.role !== 'admin' && media.uploadedBy.toString() !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this media' });
+        }
+
         await media.deleteOne();
 
         res.status(200).json({

@@ -17,7 +17,7 @@ import StudentDirectory from './pages/StudentDirectory';
 import PublicDirectory from './pages/PublicDirectory';
 import Queries from './pages/Queries';
 
-const AlumniVerificationScreen = ({ status }) => {
+const VerificationStatusScreen = ({ status }) => {
   const { logout } = useAuth();
 
   if (status === 'rejected') {
@@ -29,7 +29,7 @@ const AlumniVerificationScreen = ({ status }) => {
           </div>
           <h2 className="text-2xl font-bold text-[var(--text-dark)] mb-4">Verification Rejected</h2>
           <p className="text-[var(--text-light)] mb-8">
-            Your request has been disapproved by the admin. Please contact support for more information.
+            Your account request has been disapproved by the admin. Please contact support for more information.
           </p>
           <button onClick={logout} className="px-6 py-3 bg-[var(--primary)] text-white font-bold rounded-xl hover:scale-105 transition-smooth w-full">Logout</button>
         </div>
@@ -46,7 +46,7 @@ const AlumniVerificationScreen = ({ status }) => {
         </div>
         <h2 className="text-2xl font-bold text-[var(--text-dark)] mb-4">Verification Pending</h2>
         <p className="text-[var(--text-light)] mb-8">
-          Your request has been sent to the admin. Please login after sometime to check if it is approved or rejected.
+          Your account request has been sent to the admin. Please check back later to see if it has been approved.
         </p>
         <button onClick={logout} className="px-6 py-3 bg-[var(--surface)] text-[var(--primary)] font-bold rounded-xl border border-[var(--border)] hover:bg-[var(--background)] transition-smooth w-full">Logout</button>
       </div>
@@ -60,9 +60,9 @@ const ProtectedRoute = ({ children, roles }) => {
   if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
   if (!user) return <Navigate to="/login" />;
 
-  // Restrict alumni who are not verified
-  if (user.role === 'alumni' && !user.isVerified) {
-    return <AlumniVerificationScreen status={user.verificationStatus} />;
+  // Restrict both alumni and students who are not verified
+  if ((user.role === 'alumni' || user.role === 'student') && !user.isVerified) {
+    return <VerificationStatusScreen status={user.verificationStatus} />;
   }
 
   if (roles && !roles.includes(user.role)) return <Navigate to="/" />;

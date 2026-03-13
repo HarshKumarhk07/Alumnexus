@@ -145,7 +145,7 @@ const Gallery = () => {
                                 </div>
                             </div>
 
-                            {user?.role === 'admin' && (
+                            {(user?.role === 'admin' || item.uploadedBy?._id === user?.id) && (
                                 <button
                                     onClick={(e) => handleDelete(item._id, e)}
                                     className="absolute top-4 left-4 p-2 bg-red-500/80 hover:bg-red-600 backdrop-blur-md rounded-xl opacity-0 group-hover:opacity-100 transition-smooth"

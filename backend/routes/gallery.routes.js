@@ -6,6 +6,6 @@ const { upload } = require('../config/cloudinary');
 
 router.get('/', getGallery);
 router.post('/', protect, authorize('admin', 'alumni'), requireVerified, upload.array('images', 50), uploadMedia);
-router.delete('/:id', protect, authorize('admin'), deleteMedia);
+router.delete('/:id', protect, authorize('admin', 'alumni'), deleteMedia);
 
 module.exports = router;
